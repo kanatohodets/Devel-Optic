@@ -4,7 +4,7 @@ package Devel::Optic;
 
 use Carp qw(croak);
 use Scalar::Util qw(looks_like_number);
-use Ref::Util qw(is_arrayref is_hashref is_scalarref is_refref is_coderef);
+use Ref::Util qw(is_arrayref is_hashref is_scalarref is_refref);
 
 use Devel::Size qw(total_size);
 use PadWalker qw(peek_my);
@@ -34,17 +34,12 @@ sub new {
         # how many keys or indicies to display in a sample from an over-size
         # hashref/arrayref
         ref_key_sample_count => $params{ref_key_sample_count} // 4,
-
-        # if this is a coderef, call it with the selected data when fit_to_view
-        # returns a ref. if undef, fit_to_view returns the raw data
-        serializer => undef,
     };
-
 
     bless $self, $class;
 }
 
-sub view {
+sub inspect {
     my ($self, $lens) = @_;
     my $full_picture = $self->full_picture($lens);
     return $self->fit_to_view($full_picture);
@@ -107,11 +102,7 @@ sub fit_to_view {
     # data structure, but it's likely much lighter than serialization.
     my $size = total_size($subject);
     if ($size < $max_size) {
-        my $ret = $subject;
-        if (is_coderef $self->{serializer} && ref $subject) {
-            $ret = $self->{serializer}->($subject);
-        }
-        return $ret;
+        return $subject;
     }
 
     # now we're in too-big territory, so we need to come up with a way to get
@@ -126,7 +117,7 @@ sub fit_to_view {
         # understanding too much.
         return sprintf(
             "%s (truncated to %d bytes; %d bytes in full)",
-            substr($var, 0, $scalar_truncation_size),
+            substr($subject, 0, $scalar_truncation_size),
             $scalar_truncation_size,
             $size
         );
@@ -174,11 +165,11 @@ sub fit_to_view {
 
 =head1 NAME
 
-Devel::Optic - JSON::Pointer meets PadWalker 
+Devel::Optic - JSON::Pointer meets PadWalker
 
 =head1 VERSION
 
-version 1.234
+version 0.001
 
 =head1 SYNOPSIS
 
@@ -195,12 +186,12 @@ version 1.234
 =head1 DESCRIPTION
 
 L<Devel::Optic> is a L<borescope|https://en.wikipedia.org/wiki/Borescope> for Perl
-programs. 
+programs.
 
 It provides a basic JSON::Pointer-ish path syntax (a 'lens') for extracting bits of
 complex data structures from a Perl scope based on the variable name. This is
 intended for use by debuggers or similar introspection/observability tools
-where the consuming audience is a human troubleshooting a system. 
+where the consuming audience is a human troubleshooting a system.
 
 If the data structure selected by the lens is too big, it will summarize the
 selected data structure into a short, human-readable message. No attempt is
@@ -223,42 +214,33 @@ C<%options> may be empty, or contain any of the following keys:
 
 =item *
 
-C<uplevel> 
+C<uplevel>
 
 Which Perl scope to view. Default: 1 (scope that C<Devel::Optic> is called from)
 
 =item *
 
-C<max_size> 
+C<max_size>
 
 Max size, in bytes, of a datastructure that can be viewed without summarization. Default: 5120.
 
 =item *
 
-C<scalar_truncation_size> 
+C<scalar_truncation_size>
 
 Size, in bytes, that scalar values are truncated to for viewing. Default: 512.
 
 =item *
 
-C<scalar_sample_size> 
+C<scalar_sample_size>
 
-Size, in bytes, that scalar children of a summarized data structure are truncated to for summary. Default: 64.
+Size, in bytes, that scalar children of a summarized data structure are trimmed to for inclusion in the summary. Default: 64.
 
 =item *
 
-C<ref_key_sample_count> 
+C<ref_key_sample_count>
 
 Number of keys/indices to display when summarizing a hash or arrayref. Default: 4.
-
-=item *
-
-C<serializer>
-
-If defined, C<fit_to_view> will invoke this before returning a raw data
-structure (e.g., one that was small enough not to be summarized). You can use
-this to ensure that C<fit_to_view> consistently returns a string value, rather
-than sometimes returning a string and sometimes a data structure. Default: undef.
 
 =back
 
