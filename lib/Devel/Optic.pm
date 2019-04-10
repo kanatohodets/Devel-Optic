@@ -212,33 +212,23 @@ C<%options> may be empty, or contain any of the following keys:
 
 =over 4
 
-=item *
-
-C<uplevel>
+=item C<uplevel>
 
 Which Perl scope to view. Default: 1 (scope that C<Devel::Optic> is called from)
 
-=item *
-
-C<max_size>
+=item C<max_size>
 
 Max size, in bytes, of a datastructure that can be viewed without summarization. Default: 5120.
 
-=item *
-
-C<scalar_truncation_size>
+=item C<scalar_truncation_size>
 
 Size, in bytes, that scalar values are truncated to for viewing. Default: 512.
 
-=item *
-
-C<scalar_sample_size>
+=item C<scalar_sample_size>
 
 Size, in bytes, that scalar children of a summarized data structure are trimmed to for inclusion in the summary. Default: 64.
 
-=item *
-
-C<ref_key_sample_count>
+=item C<ref_key_sample_count>
 
 Number of keys/indices to display when summarizing a hash or arrayref. Default: 4.
 
@@ -278,7 +268,9 @@ exist, L<Devel::Optic> will croak.
 =head3 LENS SYNTAX
 
 L<Devel::Optic> uses a very basic JSON::Pointer style path syntax called
-a 'lens'. A lens always starts with a variable name in the scope being picked,
+a 'lens'.
+
+A lens always starts with a variable name in the scope being picked,
 and uses C</> to indicate deeper access to that variable. At each level, the
 value should be a key or index that can be used to navigate deeper or identify
 the target data.
@@ -312,6 +304,38 @@ Other syntactic examples:
     @array/0/foo
     $array_ref/0/foo
     $scalar
+
+=head4 LENS SYNTAX ALTNERATIVES
+
+The 'lens' syntax attempts to provide a reasonable amount of power for
+navigating Perl data structures without risking the stability of the system
+under inspection.
+
+In other words, while C<eval '$my_cool_hash{a}-E<gt>[1]-E<gt>{needle}'> would
+be a much more powerful solution to the problem of navigating Perl data
+structures, it opens up all the cans of worms at once.
+
+I'm open to exploring richer syntax in this area as long as it is aligned with
+the following goals:
+
+=over 4
+
+=item Simple query model
+
+As a debugging tool, you have enough on your brain just debugging your system.
+Second-guessing your query syntax when you get unexpected results is a major
+distraction and leads to loss of trust in the tool (I'm looking at you,
+ElasticSearch).
+
+=item O(1), not O(n) (or worse)
+
+I'd like to avoid globs or matching syntax that might end up iterating over
+unbounded chunks of a data structure. Traversing a small, fixed number of keys
+in 'parallel' sounds like a sane extension, but anything which requires
+iterating over the entire set of hash keys or array indicies is likely to
+surprise when debugging systems with unexpectedly large data structures.
+
+=back
 
 =head1 SEE ALSO
 
