@@ -9,6 +9,13 @@ use Ref::Util qw(is_arrayref is_hashref is_scalarref is_refref);
 use Devel::Size qw(total_size);
 use PadWalker qw(peek_my);
 
+use constant {
+    DEFAULT_MAX_SIZE_BYTES => 5120,
+    DEFAULT_SCALAR_TRUNCATION_SIZE_BYTES => 512,
+    DEFAULT_SCALAR_SAMPLE_SIZE => 64,
+    DEFAULT_REF_KEY_SAMPLE_COUNT => 4,
+};
+
 sub new {
     my ($class, %params) = @_;
     my $uplevel = $params{uplevel} // 1;
@@ -21,19 +28,19 @@ sub new {
         uplevel => $uplevel,
 
         # data structures larger than this value (bytes) will be compressed into a sample
-        max_size => $params{max_size} // 5120,
+        max_size => $params{max_size} // DEFAULT_MAX_SIZE_BYTES,
 
         # if our over-size entity is a scalar, how much of the scalar should we export.
         # assumption is that this is a "simple" data structure and trimming it much
         # more aggressively probably won't hurt understanding that much.
-        scalar_truncation_size => $params{scalar_truncation_size} // 512,
+        scalar_truncation_size => $params{scalar_truncation_size} // DEFAULT_SCALAR_TRUNCATION_SIZE_BYTES,
 
         # when building a sample, how much of each scalar child to substr
-        scalar_sample_size => $params{scalar_sample_size} // 64,
+        scalar_sample_size => $params{scalar_sample_size} // DEFAULT_SCALAR_SAMPLE_SIZE,
 
         # how many keys or indicies to display in a sample from an over-size
         # hashref/arrayref
-        ref_key_sample_count => $params{ref_key_sample_count} // 4,
+        ref_key_sample_count => $params{ref_key_sample_count} // DEFAULT_REF_KEY_SAMPLE_COUNT,
     };
 
     bless $self, $class;
@@ -143,8 +150,11 @@ sub fit_to_view {
                 $val_chunk = ref $val;
             } else {
                 $val_chunk = substr($val, 0, $scalar_sample_size);
+                $val_chunk .= '...' if length($val_chunk) < length($val);
             }
-            push @sample, sprintf("%s => %s", $key, $val_chunk);
+            my $key_chunk = substr($key, 0, $scalar_sample_size);
+            $key_chunk .= '...' if length($key_chunk) < length($key);
+            push @sample, sprintf("%s => %s", $key_chunk, $val_chunk);
         }
         $sample_text = sprintf("{%s ...} (%d keys / %d bytes)", join(', ', @sample), scalar @keys, $size);
     } elsif (is_arrayref($subject)) {
@@ -158,6 +168,7 @@ sub fit_to_view {
                 $val_chunk = ref $val;
             } else {
                 $val_chunk = substr($val, 0, $scalar_sample_size);
+                $val_chunk .= '...' if length($val_chunk) < length($val);
             }
             push @sample, $val_chunk;
         }
@@ -246,6 +257,10 @@ Number of keys/indices to display when summarizing a hash or arrayref. Default: 
   my $o = Devel::Optic->new;
   # 'a'
   $o->inspect('$stuff/foo/0');
+
+This is the primary method. Given a lens, It will either return the requested
+data structure, or, if it is too big, return a summary of the data structure
+found at that path.
 
 =head2 fit_to_view
 
