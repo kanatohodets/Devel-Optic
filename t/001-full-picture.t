@@ -79,6 +79,25 @@ subtest 'valid deep lenses, mixed data types' => sub {
 subtest 'invalid lenses' => sub {
     # 'uplevel 3' because 'dies' creates a new scope
     my $o = Devel::Optic->new(uplevel => 3);
+
+    like(
+        dies { $o->full_picture('') },
+        qr/\$lens must not be empty/,
+        "exception for variable that does not exist"
+    );
+
+    like(
+        dies { $o->full_picture('//') },
+        qr/\$lens must not be empty/,
+        "exception for variable that does not exist"
+    );
+
+    like(
+        dies { $o->full_picture('#weird/foo/bar') },
+        qr/\$lens must start with a Perl variable name \(like "\$scalar", "\@array", or "\%hash"\)/,
+        "exception for variable that does not exist"
+    );
+
     like(
         dies { $o->full_picture('$totally_bogus_scalar') },
         qr/variable '\$totally_bogus_scalar' is not a lexical variable in scope/,

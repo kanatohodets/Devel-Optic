@@ -49,8 +49,14 @@ sub full_picture {
     my ($self, $lens) = @_;
     my $uplevel = $self->{uplevel};
 
+
     my @pieces = split '/', $lens;
-    croak "'$lens' doesn't look like a Devel::Optic lens" if scalar @pieces < 1;
+
+    croak '$lens must not be empty' if !$lens || !defined $pieces[0];
+    my $sigil = substr $pieces[0], 0, 1;
+    if (!$sigil || $sigil ne '$' && $sigil ne '%' && $sigil ne '@') {
+        croak '$lens must start with a Perl variable name (like "$scalar", "@array", or "%hash")';
+    }
 
     my $var_name = shift @pieces;
     my $scope = peek_my($uplevel);
