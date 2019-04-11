@@ -48,7 +48,7 @@ subtest 'valid key picking' => sub {
    is($o->full_picture('$hashref/c'), $hashref->{c}, 'multi member hashref key c');
 };
 
-subtest 'valid deep lenses, single data type' => sub {
+subtest 'valid deep routes, single data type' => sub {
     my $o = Devel::Optic->new;
     my @array = ([[[42]]]);
     is($o->full_picture('@array/0/0/0/0'), $array[0]->[0]->[0]->[0], 'array nested index');
@@ -61,7 +61,7 @@ subtest 'valid deep lenses, single data type' => sub {
     is($o->full_picture('$hashref/foo/foo/foo/foo'), $hashref->{foo}->{foo}->{foo}->{foo}, 'hashref nested key');
 };
 
-subtest 'valid deep lenses, mixed data types' => sub {
+subtest 'valid deep routes, mixed data types' => sub {
     my $o = Devel::Optic->new;
     my @array = ({ foo => [{ foo => 42}]});
     is($o->full_picture('@array/0/foo/0/foo'), $array[0]->{foo}->[0]->{foo}, 'array nested mixed type index');
@@ -76,25 +76,25 @@ subtest 'valid deep lenses, mixed data types' => sub {
     is($o->full_picture('$hashref/foo/0/foo/0'), $hash{foo}->[0]->{foo}->[0], 'hashref nested mixed type key');
 };
 
-subtest 'invalid lenses' => sub {
+subtest 'invalid routes' => sub {
     # 'uplevel 3' because 'dies' creates a new scope
     my $o = Devel::Optic->new(uplevel => 3);
 
     like(
         dies { $o->full_picture('') },
-        qr/\$lens must not be empty/,
+        qr/\$route must not be empty/,
         "exception for variable that does not exist"
     );
 
     like(
         dies { $o->full_picture('//') },
-        qr/\$lens must not be empty/,
+        qr/\$route must not be empty/,
         "exception for variable that does not exist"
     );
 
     like(
         dies { $o->full_picture('#weird/foo/bar') },
-        qr/\$lens must start with a Perl variable name \(like "\$scalar", "\@array", or "\%hash"\)/,
+        qr/\$route must start with a Perl variable name \(like "\$scalar", "\@array", or "\%hash"\)/,
         "exception for variable that does not exist"
     );
 

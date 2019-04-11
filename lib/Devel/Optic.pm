@@ -47,22 +47,22 @@ sub new {
 }
 
 sub inspect {
-    my ($self, $lens) = @_;
-    my $full_picture = $self->full_picture($lens);
+    my ($self, $route) = @_;
+    my $full_picture = $self->full_picture($route);
     return $self->fit_to_view($full_picture);
 }
 
 sub full_picture {
-    my ($self, $lens) = @_;
+    my ($self, $route) = @_;
     my $uplevel = $self->{uplevel};
 
 
-    my @pieces = split '/', $lens;
+    my @pieces = split '/', $route;
 
-    croak '$lens must not be empty' if !$lens || !defined $pieces[0];
+    croak '$route must not be empty' if !$route || !defined $pieces[0];
     my $sigil = substr $pieces[0], 0, 1;
     if (!$sigil || $sigil ne '$' && $sigil ne '%' && $sigil ne '@') {
-        croak '$lens must start with a Perl variable name (like "$scalar", "@array", or "%hash")';
+        croak '$route must start with a Perl variable name (like "$scalar", "@array", or "%hash")';
     }
 
     my $var_name = shift @pieces;
@@ -76,30 +76,30 @@ sub full_picture {
     }
 
     my $position = $var;
-    my $lens_so_far = $var_name;
+    my $route_so_far = $var_name;
     while (scalar @pieces) {
         my $key = shift @pieces;
-        my $new_lens = $lens_so_far . "/$key";
+        my $new_route = $route_so_far . "/$key";
         if (is_arrayref($position)) {
             if (!looks_like_number($key)) {
-                croak "'$lens_so_far' is an array, but '$new_lens' points to a string key";
+                croak "'$route_so_far' is an array, but '$new_route' points to a string key";
             }
             my $len = scalar @$position;
             # negative indexes need checking too
             if ($len <= $key || ($key < 0 && ((-1 * $key) > $len))) {
-                croak "'$new_lens' does not exist: array '$lens_so_far' is only $len elements long";
+                croak "'$new_route' does not exist: array '$route_so_far' is only $len elements long";
             }
             $position = $position->[$key];
         } elsif (is_hashref($position)) {
             if (!exists $position->{$key}) {
-                croak "'$new_lens' does not exist: no key '$key' in hash '$lens_so_far'";
+                croak "'$new_route' does not exist: no key '$key' in hash '$route_so_far'";
             }
             $position = $position->{$key};
         } else {
             my $ref = ref $position || "NOT-A-REF";
-            croak "'$lens_so_far' points to ref of type '$ref'. '$lens' points deeper, but Devel::Optic doesn't know how to traverse further";
+            croak "'$route_so_far' points to ref of type '$ref'. '$route' points deeper, but Devel::Optic doesn't know how to traverse further";
         }
-        $lens_so_far = $new_lens;
+        $route_so_far = $new_route;
     }
     return $position;
 }
@@ -201,18 +201,18 @@ Devel::Optic - JSON::Pointer meets PadWalker
 L<Devel::Optic> is a L<borescope|https://en.wikipedia.org/wiki/Borescope> for Perl
 programs.
 
-It provides a basic JSON::Pointer-ish path syntax (a 'lens') for extracting bits of
+It provides a basic JSON::Pointer-ish path syntax (a 'route') for extracting bits of
 complex data structures from a Perl scope based on the variable name. This is
 intended for use by debuggers or similar introspection/observability tools
 where the consuming audience is a human troubleshooting a system.
 
-If the data structure selected by the lens is too big, it will summarize the
+If the data structure selected by the route is too big, it will summarize the
 selected data structure into a short, human-readable message. No attempt is
 made to make the summary machine-readable: it should be immediately passed to
 a structured logging pipeline.
 
-It takes a caller uplevel and a JSON::Pointer-style 'lens', and returns the
-variable or summary of a variable found by that lens for the scope of that
+It takes a caller uplevel and a JSON::Pointer-style 'route', and returns the
+variable or summary of a variable found by that route for the scope of that
 caller level.
 
 =head1 METHODS
@@ -254,7 +254,7 @@ Number of keys/indices to display when summarizing a hash or arrayref. Default: 
   # 'a'
   $o->inspect('$stuff/foo/0');
 
-This is the primary method. Given a lens, It will either return the requested
+This is the primary method. Given a route, It will either return the requested
 data structure, or, if it is too big, return a summary of the data structure
 found at that path.
 
@@ -274,25 +274,25 @@ This method takes a Perl object/data structure and either returns it unchanged,
 or produces a 'squished' summary of that object/data structure. This summary
 makes no attempt to be comprehensive: its goal is to maximally aid human
 troubleshooting efforts, including efforts to refine a previous invocation of
-Devel::Optic with a more specific lens.
+Devel::Optic with a more specific route.
 
 =head2 full_picture
 
-This method takes a 'lens' and uses it to extract a data structure from the
-L<Devel::Optic>'s C<uplevel>. If the lens points to a variable that does not
+This method takes a 'route' and uses it to extract a data structure from the
+L<Devel::Optic>'s C<uplevel>. If the route points to a variable that does not
 exist, L<Devel::Optic> will croak.
 
-=head3 LENS SYNTAX
+=head3 ROUTE SYNTAX
 
 L<Devel::Optic> uses a very basic JSON::Pointer style path syntax called
-a 'lens'.
+a 'route'.
 
-A lens always starts with a variable name in the scope being picked,
+A route always starts with a variable name in the scope being picked,
 and uses C</> to indicate deeper access to that variable. At each level, the
 value should be a key or index that can be used to navigate deeper or identify
 the target data.
 
-For example, a lens like this:
+For example, a route like this:
 
     %my_cool_hash/a/1/needle
 
@@ -307,7 +307,7 @@ Will return the value:
 
     "find me!"
 
-A less selective lens on the same data structure:
+A less selective route on the same data structure:
 
     %my_cool_hash/a
 
@@ -322,9 +322,9 @@ Other syntactic examples:
     $array_ref/0/foo
     $scalar
 
-=head4 LENS SYNTAX ALTNERATIVES
+=head4 ROUTE SYNTAX ALTNERATIVES
 
-The 'lens' syntax attempts to provide a reasonable amount of power for
+The 'route' syntax attempts to provide a reasonable amount of power for
 navigating Perl data structures without risking the stability of the system
 under inspection.
 
