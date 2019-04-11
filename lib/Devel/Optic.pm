@@ -184,10 +184,6 @@ sub fit_to_view {
 
 Devel::Optic - JSON::Pointer meets PadWalker
 
-=head1 VERSION
-
-version 0.001
-
 =head1 SYNOPSIS
 
   use Devel::Optic;
@@ -375,14 +371,3 @@ L<Mojo::JSON::Pointer>
 L<Devel::Probe>
 
 =back
-
-=head1 AUTHOR
-
-  Ben Tyler <btyler@cpan.org>
-
-=head1 COPYRIGHT AND LICENSE
-
-This software is copyright (c) 2019 by Ben Tyler
-
-This is free software; you can redistribute it and/or modify it under the
-same terms as the Perl 5 programming language system itself.
