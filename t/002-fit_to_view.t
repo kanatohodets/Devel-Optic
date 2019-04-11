@@ -39,7 +39,7 @@ subtest 'summarize subjectively big structures by default' => sub {
     );
 
     my $ref_limit = Devel::Optic::DEFAULT_MAX_SIZE_BYTES;
-    my $arrayref_with_simple_scalar_members = [('a') x 250];
+    my $arrayref_with_simple_scalar_members = [('a') x 500];
     my $arrayref_simple_len = scalar @$arrayref_with_simple_scalar_members;
     like(
         $o->fit_to_view($arrayref_with_simple_scalar_members),
@@ -127,7 +127,6 @@ subtest 'check configurable limits' => sub {
         qr|HASH: \{\w => \d \.\.\.\} \(3 keys / \d+ bytes\)\. Exceeds viewing size \(1 bytes\)$|,
         'hashref summary shows ref_key_sample_count pairs'
     );
-
 };
 
 done_testing;
