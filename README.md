@@ -19,18 +19,18 @@ Devel::Optic - JSON::Pointer meets PadWalker
 [Devel::Optic](https://metacpan.org/pod/Devel::Optic) is a [borescope](https://en.wikipedia.org/wiki/Borescope) for Perl
 programs.
 
-It provides a basic JSON::Pointer-ish path syntax (a 'lens') for extracting bits of
+It provides a basic JSON::Pointer-ish path syntax (a 'route') for extracting bits of
 complex data structures from a Perl scope based on the variable name. This is
 intended for use by debuggers or similar introspection/observability tools
 where the consuming audience is a human troubleshooting a system.
 
-If the data structure selected by the lens is too big, it will summarize the
+If the data structure selected by the route is too big, it will summarize the
 selected data structure into a short, human-readable message. No attempt is
 made to make the summary machine-readable: it should be immediately passed to
 a structured logging pipeline.
 
-It takes a caller uplevel and a JSON::Pointer-style 'lens', and returns the
-variable or summary of a variable found by that lens for the scope of that
+It takes a caller uplevel and a JSON::Pointer-style 'route', and returns the
+variable or summary of a variable found by that route for the scope of that
 caller level.
 
 # METHODS
@@ -68,7 +68,7 @@ caller level.
     # 'a'
     $o->inspect('$stuff/foo/0');
 
-This is the primary method. Given a lens, It will either return the requested
+This is the primary method. Given a route, It will either return the requested
 data structure, or, if it is too big, return a summary of the data structure
 found at that path.
 
@@ -88,25 +88,25 @@ This method takes a Perl object/data structure and either returns it unchanged,
 or produces a 'squished' summary of that object/data structure. This summary
 makes no attempt to be comprehensive: its goal is to maximally aid human
 troubleshooting efforts, including efforts to refine a previous invocation of
-Devel::Optic with a more specific lens.
+Devel::Optic with a more specific route.
 
 ## full\_picture
 
-This method takes a 'lens' and uses it to extract a data structure from the
-[Devel::Optic](https://metacpan.org/pod/Devel::Optic)'s `uplevel`. If the lens points to a variable that does not
+This method takes a 'route' and uses it to extract a data structure from the
+[Devel::Optic](https://metacpan.org/pod/Devel::Optic)'s `uplevel`. If the route points to a variable that does not
 exist, [Devel::Optic](https://metacpan.org/pod/Devel::Optic) will croak.
 
-### LENS SYNTAX
+### ROUTE SYNTAX
 
 [Devel::Optic](https://metacpan.org/pod/Devel::Optic) uses a very basic JSON::Pointer style path syntax called
-a 'lens'.
+a 'route'.
 
-A lens always starts with a variable name in the scope being picked,
+A route always starts with a variable name in the scope being picked,
 and uses `/` to indicate deeper access to that variable. At each level, the
 value should be a key or index that can be used to navigate deeper or identify
 the target data.
 
-For example, a lens like this:
+For example, a route like this:
 
     %my_cool_hash/a/1/needle
 
@@ -121,7 +121,7 @@ Will return the value:
 
     "find me!"
 
-A less selective lens on the same data structure:
+A less selective route on the same data structure:
 
     %my_cool_hash/a
 
@@ -136,9 +136,9 @@ Other syntactic examples:
     $array_ref/0/foo
     $scalar
 
-#### LENS SYNTAX ALTNERATIVES
+#### ROUTE SYNTAX ALTNERATIVES
 
-The 'lens' syntax attempts to provide a reasonable amount of power for
+The 'route' syntax attempts to provide a reasonable amount of power for
 navigating Perl data structures without risking the stability of the system
 under inspection.
 
