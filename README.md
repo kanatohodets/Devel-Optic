@@ -16,13 +16,13 @@ Devel::Optic - JSON::Pointer meets PadWalker
 
 # DESCRIPTION
 
-[Devel::Optic](https://metacpan.org/pod/Devel::Optic) is a [borescope](https://en.wikipedia.org/wiki/Borescope) for Perl
-programs.
+[Devel::Optic](https://metacpan.org/pod/Devel::Optic) is a [borescope](https://en.wikipedia.org/wiki/Borescope) for
+Perl programs.
 
-It provides a basic JSON::Pointer-ish path syntax (a 'route') for extracting bits of
-complex data structures from a Perl scope based on the variable name. This is
-intended for use by debuggers or similar introspection/observability tools
-where the consuming audience is a human troubleshooting a system.
+It provides a basic JSON::Pointer-ish path syntax (a 'route') for extracting
+bits of complex data structures from a Perl scope based on the variable name.
+This is intended for use by debuggers or similar introspection/observability
+tools where the consuming audience is a human troubleshooting a system.
 
 If the data structure selected by the route is too big, it will summarize the
 selected data structure into a short, human-readable message. No attempt is
@@ -51,11 +51,13 @@ caller level.
 
 - `scalar_truncation_size`
 
-    Size, in bytes, that scalar values are truncated to for viewing. Default: 512.
+    Size, in `substr` length terms, that scalar values are truncated to for
+    viewing. Default: 512.
 
 - `scalar_sample_size`
 
-    Size, in bytes, that scalar children of a summarized data structure are trimmed to for inclusion in the summary. Default: 64.
+    Size, in `substr` length terms, that scalar children of a summarized data
+    structure are trimmed to for inclusion in the summary. Default: 64.
 
 - `ref_key_sample_count`
 

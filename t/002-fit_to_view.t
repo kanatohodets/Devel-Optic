@@ -31,10 +31,10 @@ subtest 'avoid summarizing small structures by default' => sub {
 subtest 'summarize subjectively big structures by default' => sub {
     my $o = Devel::Optic->new();
     my $string = "a" x Devel::Optic::DEFAULT_MAX_SIZE_BYTES;
-    my $scalar_limit = Devel::Optic::DEFAULT_SCALAR_TRUNCATION_SIZE_BYTES;
+    my $scalar_limit = Devel::Optic::DEFAULT_SCALAR_TRUNCATION_SIZE;
     like(
         $o->fit_to_view($string),
-        qr|a* \(truncated to $scalar_limit bytes; \d+ bytes in full\)$|,
+        qr|a* \(truncated to length $scalar_limit; length \d+ / \d+ bytes in full\)$|,
         'long string gets truncated message'
     );
 
@@ -82,7 +82,7 @@ subtest 'check configurable limits' => sub {
 
     like(
         $o->fit_to_view("a"),
-        qr|a \(truncated to 1 bytes; \d+ bytes in full\)$|,
+        qr|a \(truncated to length 1; length \d+ / \d+ bytes in full\)$|,
         'string gets truncated message'
     );
 

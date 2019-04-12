@@ -12,7 +12,7 @@ use PadWalker qw(peek_my);
 
 use constant {
     DEFAULT_MAX_SIZE_BYTES => 5120,
-    DEFAULT_SCALAR_TRUNCATION_SIZE_BYTES => 512,
+    DEFAULT_SCALAR_TRUNCATION_SIZE => 512,
     DEFAULT_SCALAR_SAMPLE_SIZE => 64,
     DEFAULT_REF_KEY_SAMPLE_COUNT => 4,
 };
@@ -34,7 +34,7 @@ sub new {
         # if our over-size entity is a scalar, how much of the scalar should we export.
         # assumption is that this is a "simple" data structure and trimming it much
         # more aggressively probably won't hurt understanding that much.
-        scalar_truncation_size => $params{scalar_truncation_size} // DEFAULT_SCALAR_TRUNCATION_SIZE_BYTES,
+        scalar_truncation_size => $params{scalar_truncation_size} // DEFAULT_SCALAR_TRUNCATION_SIZE,
 
         # when building a sample, how much of each scalar child to substr
         scalar_sample_size => $params{scalar_sample_size} // DEFAULT_SCALAR_SAMPLE_SIZE,
@@ -130,9 +130,10 @@ sub fit_to_view {
         # number...), we can trim much more aggressively without hurting user
         # understanding too much.
         return sprintf(
-            "%s (truncated to %d bytes; %d bytes in full)",
+            "%s (truncated to length %d; length %d / %d bytes in full)",
             substr($subject, 0, $scalar_truncation_size),
             $scalar_truncation_size,
+            length $subject,
             $size
         );
     }
@@ -199,13 +200,13 @@ Devel::Optic - JSON::Pointer meets PadWalker
 
 =head1 DESCRIPTION
 
-L<Devel::Optic> is a L<borescope|https://en.wikipedia.org/wiki/Borescope> for Perl
-programs.
+L<Devel::Optic> is a L<borescope|https://en.wikipedia.org/wiki/Borescope> for
+Perl programs.
 
-It provides a basic JSON::Pointer-ish path syntax (a 'route') for extracting bits of
-complex data structures from a Perl scope based on the variable name. This is
-intended for use by debuggers or similar introspection/observability tools
-where the consuming audience is a human troubleshooting a system.
+It provides a basic JSON::Pointer-ish path syntax (a 'route') for extracting
+bits of complex data structures from a Perl scope based on the variable name.
+This is intended for use by debuggers or similar introspection/observability
+tools where the consuming audience is a human troubleshooting a system.
 
 If the data structure selected by the route is too big, it will summarize the
 selected data structure into a short, human-readable message. No attempt is
@@ -236,11 +237,13 @@ Max size, in bytes, of a datastructure that can be viewed without summarization.
 
 =item C<scalar_truncation_size>
 
-Size, in bytes, that scalar values are truncated to for viewing. Default: 512.
+Size, in C<substr> length terms, that scalar values are truncated to for
+viewing. Default: 512.
 
 =item C<scalar_sample_size>
 
-Size, in bytes, that scalar children of a summarized data structure are trimmed to for inclusion in the summary. Default: 64.
+Size, in C<substr> length terms, that scalar children of a summarized data
+structure are trimmed to for inclusion in the summary. Default: 64.
 
 =item C<ref_key_sample_count>
 
