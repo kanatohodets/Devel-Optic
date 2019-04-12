@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 package Devel::Optic;
+# ABSTRACT: JSON::Pointer meets PadWalker
 
 use Carp qw(croak);
 use Scalar::Util qw(looks_like_number);
