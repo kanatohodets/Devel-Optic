@@ -47,7 +47,23 @@ caller level.
 
 - `max_size`
 
-    Max size, in bytes, of a datastructure that can be viewed without summarization. Default: 5120.
+    Max size, in bytes, of a data structure that can be viewed without
+    summarization. This is a little hairy across different architectures, so this
+    is best expressed in terms of Perl data structures if specified. The goal is to
+    avoid spitting out subjectively 'big' Perl data structures to a debugger or
+    log. If you're tuning this value, keep in mind that CODE refs are _enormous_
+    (~33kb on `x86_64`), so basically any data structure with CODE refs inside
+    will be summarized.
+
+    Default: Platform dependent. The value is calculated by
+
+        Devel::Size::total_size([ map { { a => [1, 2, 3, qw(foo bar baz)] } } 1 .. 5 ])
+
+    ... which is ~3kb on `x86_64`, and ~160 bytes JSON encoded. This is an
+    estimate on my part for the size of data structure that makes sense to export
+    in raw format when viewed. In my entirely subjective opinion, larger data
+    structures than this are too big to reasonably export to logs in their
+    entirety.
 
 - `scalar_truncation_size`
 

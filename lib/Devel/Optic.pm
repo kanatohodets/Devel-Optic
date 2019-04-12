@@ -11,7 +11,13 @@ use Devel::Size qw(total_size);
 use PadWalker qw(peek_my);
 
 use constant {
-    DEFAULT_MAX_SIZE_BYTES => 5120,
+    EXEMPLAR => [ map { { a => [1, 2, 3, qw(foo bar baz)] } } 1 .. 5 ],
+};
+
+use constant {
+    # ~3kb on x86_64, and ~160 bytes JSON encoded
+    DEFAULT_MAX_SIZE_BYTES => total_size(EXEMPLAR),
+
     DEFAULT_SCALAR_TRUNCATION_SIZE => 256,
     DEFAULT_SCALAR_SAMPLE_SIZE => 64,
     DEFAULT_REF_KEY_SAMPLE_COUNT => 4,
@@ -233,7 +239,23 @@ Which Perl scope to view. Default: 1 (scope that C<Devel::Optic> is called from)
 
 =item C<max_size>
 
-Max size, in bytes, of a datastructure that can be viewed without summarization. Default: 5120.
+Max size, in bytes, of a data structure that can be viewed without
+summarization. This is a little hairy across different architectures, so this
+is best expressed in terms of Perl data structures if specified. The goal is to
+avoid spitting out subjectively 'big' Perl data structures to a debugger or
+log. If you're tuning this value, keep in mind that CODE refs are I<enormous>
+(~33kb on C<x86_64>), so basically any data structure with CODE refs inside
+will be summarized.
+
+Default: Platform dependent. The value is calculated by
+
+    Devel::Size::total_size([ map { { a => [1, 2, 3, qw(foo bar baz)] } } 1 .. 5 ])
+
+... which is ~3kb on C<x86_64>, and ~160 bytes JSON encoded. This is an
+estimate on my part for the size of data structure that makes sense to export
+in raw format when viewed. In my entirely subjective opinion, larger data
+structures than this are too big to reasonably export to logs in their
+entirety.
 
 =item C<scalar_truncation_size>
 

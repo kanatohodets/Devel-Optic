@@ -1,6 +1,7 @@
 use Test2::V0;
 
 use Devel::Optic;
+use Devel::Size qw(total_size);
 
 subtest 'avoid summarizing empty structures by default' => sub {
     my $o = Devel::Optic->new();
@@ -39,12 +40,13 @@ subtest 'summarize subjectively big structures by default' => sub {
     );
 
     my $ref_limit = Devel::Optic::DEFAULT_MAX_SIZE_BYTES;
-    my $arrayref_with_simple_scalar_members = [('a') x 500];
+    my $arrayref_with_simple_scalar_members = [('a') x 100];
     my $arrayref_simple_len = scalar @$arrayref_with_simple_scalar_members;
     like(
         $o->fit_to_view($arrayref_with_simple_scalar_members),
         qr|ARRAY: \[a, a, a, a \.\.\.\] \(len $arrayref_simple_len / \d+ bytes\)\. Exceeds viewing size \($ref_limit bytes\)$|,
-        'big arrayref with simple string scalar members gets summarized'
+        'big arrayref with simple string scalar members gets summarized',
+        { total_size => total_size($arrayref_with_simple_scalar_members), len => $arrayref_simple_len, limit => $ref_limit }
     );
 
     my $arrayref_with_ref_members = [(['a'], { a => 1 }) x 100];
@@ -52,7 +54,8 @@ subtest 'summarize subjectively big structures by default' => sub {
     like(
         $o->fit_to_view($arrayref_with_ref_members),
         qr|ARRAY: \[ARRAY, HASH, ARRAY, HASH \.\.\.\] \(len $arrayref_ref_len / \d+ bytes\)\. Exceeds viewing size \($ref_limit bytes\)$|,
-        'big arrayref with simple string scalar members gets summarized'
+        'big arrayref with mixed ref members gets summarized',
+        { total_size => total_size($arrayref_with_ref_members), len => $arrayref_ref_len, limit => $ref_limit }
     );
 
     my $hashref_with_simple_scalar_values = { map { $_ => 'a' } (1 .. 100) };
@@ -60,7 +63,8 @@ subtest 'summarize subjectively big structures by default' => sub {
     like(
         $o->fit_to_view($hashref_with_simple_scalar_values),
         qr|HASH: \{\d+ => a, \d+ => a, \d+ => a, \d+ => a \.\.\.\} \($hashref_simple_values_keys keys / \d+ bytes\)\. Exceeds viewing size \($ref_limit bytes\)$|,
-        'big hashref with simple string scalar values gets summarized'
+        'big hashref with simple string scalar values gets summarized',
+        { total_size => total_size($hashref_with_simple_scalar_values), key_count => $hashref_simple_values_keys, limit => $ref_limit }
     );
 
     my $hashref_with_ref_values = { map { $_ => ['a'] } (1 .. 100) };
@@ -68,7 +72,8 @@ subtest 'summarize subjectively big structures by default' => sub {
     like(
         $o->fit_to_view($hashref_with_ref_values),
         qr|HASH: \{\d+ => ARRAY, \d+ => ARRAY, \d+ => ARRAY, \d+ => ARRAY \.\.\.\} \($hashref_ref_values_keys keys / \d+ bytes\)\. Exceeds viewing size \($ref_limit bytes\)$|,
-        'big hashref with ref values gets summarized'
+        'big hashref with ref values gets summarized',
+        { total_size => total_size($hashref_with_ref_values), key_count => $hashref_ref_values_keys, limit => $ref_limit }
     );
 };
 
