@@ -52,7 +52,7 @@ caller level.
 - `scalar_truncation_size`
 
     Size, in `substr` length terms, that scalar values are truncated to for
-    viewing. Default: 512.
+    viewing. Default: 256.
 
 - `scalar_sample_size`
 

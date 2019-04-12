@@ -12,7 +12,7 @@ use PadWalker qw(peek_my);
 
 use constant {
     DEFAULT_MAX_SIZE_BYTES => 5120,
-    DEFAULT_SCALAR_TRUNCATION_SIZE => 512,
+    DEFAULT_SCALAR_TRUNCATION_SIZE => 256,
     DEFAULT_SCALAR_SAMPLE_SIZE => 64,
     DEFAULT_REF_KEY_SAMPLE_COUNT => 4,
 };
@@ -238,7 +238,7 @@ Max size, in bytes, of a datastructure that can be viewed without summarization.
 =item C<scalar_truncation_size>
 
 Size, in C<substr> length terms, that scalar values are truncated to for
-viewing. Default: 512.
+viewing. Default: 256.
 
 =item C<scalar_sample_size>
 
