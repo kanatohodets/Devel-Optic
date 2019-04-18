@@ -11,7 +11,7 @@ use Devel::Size qw(total_size);
 use PadWalker qw(peek_my);
 
 use constant {
-    EXEMPLAR => [ map { { a => [1, 2, 3, qw(foo bar baz)] } } 1 .. 5 ],
+    'EXEMPLAR'   => [ map +{ a => [ 1, 2, 3, qw(foo bar baz) ] }, 1 .. 5 ],
 };
 
 use constant {
