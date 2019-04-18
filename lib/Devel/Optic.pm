@@ -12,6 +12,9 @@ use PadWalker qw(peek_my);
 
 use constant {
     'EXEMPLAR'   => [ map +{ a => [ 1, 2, 3, qw(foo bar baz) ] }, 1 .. 5 ],
+    'DELIM'      => '/',
+    'TYPE_KEY'   => 'key',
+    'TYPE_INDEX' => 'index',
 };
 
 use constant {
@@ -51,6 +54,79 @@ sub new {
     };
 
     bless $self, $class;
+}
+
+sub _lex_string_spec {
+    my $str   = shift;
+    my @chars = split //, $str;
+    my ( $elem, @items );
+
+    for ( my $idx = 0; $idx <= $#chars; $idx++ ) {
+        my $char     = $chars[$idx];
+        my $has_next = $#chars >= $idx + 1;
+        my $next     = $chars[ $idx + 1 ];
+
+        # Special case: escaped characters
+        if ( $char eq '\\' && $has_next ) {
+            $elem .= $next;
+            $idx++;
+            next;
+        }
+
+        # Special case: delimited parts
+        if ( $char eq DELIM() ) {
+            if ($elem) {
+                push @items, $elem;
+                undef $elem;
+            }
+
+            push @items, DELIM();
+            next;
+        }
+
+        # Special case: last item
+        if ( !$has_next ) {
+            $elem .= $char;
+            push @items, $elem;
+            last; # unnecessary, but more readable, I think
+        }
+
+        # Normal case
+        $elem .= $char;
+    }
+
+    return \@items;
+}
+
+sub _parse_string_spec {
+    my $str         = shift;
+    my $lexed_items = _lex_string_spec($str);
+    my @items;
+
+    my %dispatch = (
+        DELIM()     => sub {0},
+        q!'(.+)'!   => sub {
+            push @items, { 'type' => TYPE_KEY(), 'value' => $_[0] };
+        },
+
+        q!([0-9]+)! => sub {
+            push @items, { 'type' => TYPE_INDEX(), 'value' => $_[0] };
+        },
+    );
+
+    LEXED_ITEM:
+    foreach my $lexed_item ( @{$lexed_items} ) {
+        foreach my $regex ( keys %dispatch ) {
+            if ( $lexed_item =~ m{^$regex$} ) {
+                $dispatch{$regex}->($1);
+                next LEXED_ITEM;
+            }
+        }
+
+        die "Unknown element: '$lexed_item'\n";
+    }
+
+    return \@items;
 }
 
 sub inspect {
