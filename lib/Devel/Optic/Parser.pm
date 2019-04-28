@@ -146,6 +146,52 @@ sub lex {
                     [NUMBER, 0]]]]]]]
 
 =cut
+sub parse_hash {
+    my @tokens = @_;
+    my $brace_count = 0;
+    my $close_index;
+    for (my $i = 0; $i <= $#tokens; $i++) {
+        if ($tokens[$i] eq HASHKEY_OPEN) {
+            $brace_count++;
+        }
+        if ($tokens[$i] eq HASHKEY_CLOSE) {
+            $brace_count--;
+            if ($brace_count == 0) {
+                $close_index = $i;
+                last;
+            }
+        }
+    }
+
+    die sprintf("invalid syntax: unclosed hash key (missing '%s')", HASHKEY_CLOSE) if !defined $close_index;
+    die "invalid syntax: empty hash key" if $close_index == 1;
+
+    return $close_index, [OP_HASHKEY, parse(@tokens[1 .. $close_index-1])];
+}
+
+sub parse_array {
+    my @tokens = @_;
+    my $bracket_count = 0;
+    my $close_index;
+    for (my $i = 0; $i <= $#tokens; $i++) {
+        if ($tokens[$i] eq ARRAYINDEX_OPEN) {
+            $bracket_count++;
+        }
+
+        if ($tokens[$i] eq ARRAYINDEX_CLOSE) {
+            $bracket_count--;
+            if ($bracket_count == 0) {
+                $close_index = $i;
+                last;
+            }
+        }
+    }
+
+    die sprintf("invalid syntax: unclosed array index (missing '%s')", ARRAYINDEX_CLOSE) if !defined $close_index;
+    die "invalid syntax: empty array index" if $close_index == 1;
+
+    return $close_index, [OP_ARRAYINDEX, parse(@tokens[1 .. $close_index-1])];
+}
 
 sub parse {
     my (@tokens) = @_;
@@ -187,48 +233,13 @@ sub parse {
 
             my $right_node;
             if ($next eq HASHKEY_OPEN) {
-                my $brace_count = 0;
-                my $close_index;
-                for (my $k = $i; $k <= $#tokens; $k++) {
-                    if ($tokens[$k] eq HASHKEY_OPEN) {
-                        $brace_count++;
-                    }
-                    if ($tokens[$k] eq HASHKEY_CLOSE) {
-                        $brace_count--;
-                        if ($brace_count == 0) {
-                            $close_index = $k;
-                            last;
-                        }
-                    }
-                }
-
-                die sprintf("invalid syntax: unclosed hash key (missing '%s')", HASHKEY_CLOSE) if !defined $close_index;
-                die "invalid syntax: empty hash key" if $close_index == $i+1;
-
-                $right_node = [ OP_HASHKEY, parse(@tokens[$i+1 .. $close_index-1]) ];
-                $i = $close_index;
+                my ($close_index, $hash_node) = parse_hash(@tokens[$i .. $#tokens]);
+                $right_node = $hash_node;
+                $i += $close_index;
             } elsif ($next eq ARRAYINDEX_OPEN) {
-                my $bracket_count = 0;
-                my $close_index;
-                for (my $k = $i; $k <= $#tokens; $k++) {
-                    if ($tokens[$k] eq ARRAYINDEX_OPEN) {
-                        $bracket_count++;
-                    }
-
-                    if ($tokens[$k] eq ARRAYINDEX_CLOSE) {
-                        $bracket_count--;
-                        if ($bracket_count == 0) {
-                            $close_index = $k;
-                            last;
-                        }
-                    }
-                }
-
-                die sprintf("invalid syntax: unclosed array index (missing '%s')", ARRAYINDEX_CLOSE) if !defined $close_index;
-                die "invalid syntax: empty array index" if $close_index == $i+1;
-
-                $right_node = [ OP_ARRAYINDEX, parse(@tokens[$i+1 .. $close_index-1]) ];
-                $i = $close_index;
+                my ($close_index, $array_node) = parse_array(@tokens[$i .. $#tokens]);
+                $right_node = $array_node;
+                $i += $close_index;
             } else {
                 die sprintf(
                     "invalid syntax: %s expects either hash key '%sfoo%s' or array index '%s0%s' on the right hand side. found '%s' instead",
