@@ -214,7 +214,8 @@ sub parse {
         }
 
         if ($token eq HASHKEY_OPEN) {
-            die sprintf "found '%s' outside of a %s operator", HASHKEY_OPEN, ACCESS_OPERATOR;
+            die sprintf "found '%s' outside of a %s operator. use %s regardless of sigil",
+                HASHKEY_OPEN, ACCESS_OPERATOR, ACCESS_OPERATOR;
         }
 
         if ($token eq HASHKEY_CLOSE) {
@@ -222,12 +223,13 @@ sub parse {
         }
 
         if ($token eq ARRAYINDEX_OPEN) {
-            die sprintf "found '%s' outside of a %s operator", ARRAYINDEX_OPEN, ACCESS_OPERATOR;
+            die sprintf "found '%s' outside of a %s operator. use %s regardess of sigil",
+                ARRAYINDEX_OPEN, ACCESS_OPERATOR, ACCESS_OPERATOR;
         }
+
         if ($token eq ARRAYINDEX_CLOSE) {
             die sprintf "found '%s' outside of a %s operator", ARRAYINDEX_CLOSE, ACCESS_OPERATOR;
         }
-
 
         if ($token eq ACCESS_OPERATOR) {
             my $next = $tokens[++$i];
