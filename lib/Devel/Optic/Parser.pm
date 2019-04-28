@@ -105,47 +105,9 @@ sub lex {
         $elem .= $char;
     }
 
-    return \@items;
+    return @items;
 }
 
-=pod
-    %foo
-    [SYMBOL, '%foo']
-
-    %foo->{bar}
-    [OP_ACCESS, [
-        [SYMBOL, '%foo'],
-        [OP_HASHKEY,
-            [STRING, 'bar']]]]
-
-    %foo->{$bar}
-    [OP_ACCESS, [
-        [SYMBOL, '%foo'],
-        [OP_HASHKEY,
-            [SYMBOL, '$bar']]]]
-
-    %foo->{bar}->[-2]->{baz}
-    [OP_ACCESS, [
-        [OP_ACCESS, [
-            [OP_ACCESS, [
-                [SYMBOL, '%foo'],
-                [OP_HASHKEY,
-                    [ STRING, 'bar']]]],
-            [OP_ARRAYINDEX,
-                [ NUMBER, -2]]]],
-        [OP_HASHKEY,
-            [STRING, 'baz']]]]
-
-    %foo->{$bar->[0]}
-    [OP_ACCESS, [
-        [SYMBOL, '%foo'],
-        [OP_HASHKEY,
-            [OP_ACCESS, [
-                [SYMBOL, '$bar'],
-                [OP_ARRAYINDEX,
-                    [NUMBER, 0]]]]]]]
-
-=cut
 sub parse_hash {
     my @tokens = @_;
     my $brace_count = 0;
