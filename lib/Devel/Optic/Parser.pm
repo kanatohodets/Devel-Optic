@@ -199,7 +199,11 @@ sub parse {
     for (my $i = 0; $i <= $#tokens; $i++) {
         my $token = $tokens[$i];
 
-        if ($token =~ /^[\$\%\@]\w+$/) {
+        if ($token =~ /^[\$\%\@]/) {
+            if ($token !~ /^[\$\%\@]\w+$/) {
+                die sprintf 'invalid symbol: "%s". symbols must start with a Perl sigil ($, %, or @) and contain only word characters', $token;
+            }
+
             $left_node = [SYMBOL, $token];
             next;
         }
