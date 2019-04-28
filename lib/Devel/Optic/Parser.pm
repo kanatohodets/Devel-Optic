@@ -45,6 +45,14 @@ sub lex {
     my @chars = grep { $_ !~ /\s/ } split //, $str;
     my ( $elem, @items );
 
+    if (scalar @chars == 0) {
+        die "invalid syntax: empty spec";
+    }
+
+    if ($chars[0] ne '$' && $chars[0] ne '@' && $chars[0] ne '%') {
+        die 'invalid syntax: spec must start with a Perl symbol (prefixed by a $, @, or % sigil)';
+    }
+
     my $in_string;
     for ( my $idx = 0; $idx <= $#chars; $idx++ ) {
         my $char     = $chars[$idx];
