@@ -35,13 +35,8 @@ use constant {
     'ARRAYINDEX_CLOSE'  => ']',
 };
 
+my %symbols = map { $_ => 1 } qw({ } [ ]);
 
-my %symbols = (
-    '{' => 'OPEN_BRACE',
-    '}' => 'CLOSE_BRACE',
-    '[' => 'OPEN_BRACKET',
-    ']' => 'CLOSE_BRACKET',
-);
 
 # %foo->{bar}->[-2]->{$baz->{asdf}}->{'blorg}'}
 sub lex {
