@@ -37,8 +37,7 @@ use constant {
 
 my %symbols = map { $_ => 1 } qw({ } [ ]);
 
-
-# %foo->{bar}->[-2]->{$baz->{asdf}}->{'blorg}'}
+# %foo->{bar}->[-2]->{$baz->{'asdf'}}->{'blorg}'}
 sub lex {
     my $str   = shift;
     # ignore whitespace
@@ -69,6 +68,7 @@ sub lex {
         # Special case: string handling
         if ( $char eq "'") {
             $in_string = !$in_string;
+            $elem .= $char;
             next;
         }
 
@@ -268,11 +268,12 @@ sub parse {
             next;
         }
 
-        # unguarded by a regex because we really mean 'hash key' and that can
-        # be all kinds of characters; the lexer deals with quotes and escaped
-        # chars already, so we need to accept anything here.
-        $left_node = [STRING, $token];
-        next;
+        if ($token =~ /^'(.+)'$/) {
+            $left_node = [STRING, $1];
+            next;
+        }
+
+        die "unrecognized token '$token'. hash key strings must be quoted with single quotes"
     }
 
     return $left_node;
