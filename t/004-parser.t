@@ -54,6 +54,26 @@ subtest 'valid lexes' => sub {
     is([ lex($test) ], [qw( %foo -> { $bar -> [ -1 ] } )], "Nested vars with nested access: $test");
 };
 
+subtest invalid_lexes => sub {
+    like(
+        dies { lex("") },
+        qr/invalid syntax: empty spec/,
+        "empty spec exception"
+    );
+
+    like(
+        dies { lex("foobar") },
+        qr/invalid syntax: spec must start with a Perl symbol/,
+        "missing sigil at start"
+    );
+
+    like(
+        dies { parse(lex(q|$foobar->{'foo}|)) },
+        qr/invalid syntax: unclosed string/,
+        "unclosed string"
+    );
+};
+
 subtest valid_parses => sub {
     for my $test (qw($foo @foo %foo)) {
         is(parse(lex($test)), [SYMBOL, $test], "Symbol '$test'");
@@ -130,6 +150,45 @@ subtest valid_parses => sub {
                         [NUMBER, 0]]]]]]],
         "$test"
     );
+};
+
+subtest invalid_parses => sub {
+    like(
+        dies { parse(lex(q|$fo#obar|)) },
+        qr/invalid symbol: "\$fo#obar". symbols must start with a Perl sigil \(.+\) and contain only word characters/,
+        "invalid symbol"
+    );
+
+    like(
+        dies { parse(lex(q|$foobar->|)) },
+        qr/invalid syntax: '->' needs something on the right hand side/,
+        "dangling access"
+    );
+
+    like(
+        dies { parse(lex(q|$foobar->#|)) },
+        qr/invalid syntax: -> expects either hash key "\{'foo'\}" or array index "\[0\]" on the right hand side/,
+        "access weird right hand side"
+    );
+
+    like(
+        dies { parse(lex(q|$foobar->{bar}|)) },
+        qr/unrecognized token 'bar'\. hash key strings must be quoted with single quotes/,
+        "unquoted hash key"
+    );
+
+    like(
+        dies { parse(lex(q|$foobar->{'baz'|)) },
+        qr/invalid syntax: unclosed hash key/,
+        "dangling brace"
+    );
+
+    like(
+        dies { parse(lex(q|$foobar->[0|)) },
+        qr/invalid syntax: unclosed array index/,
+        "dangling bracket"
+    );
+
 };
 
 done_testing;

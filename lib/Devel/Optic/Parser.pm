@@ -37,7 +37,7 @@ use constant {
 
 my %symbols = map { $_ => 1 } qw({ } [ ]);
 
-# %foo->{bar}->[-2]->{$baz->{'asdf'}}->{'blorg}'}
+# %foo->{'bar'}->[-2]->{$baz->{'asdf'}}->{'blorg}'}
 sub lex {
     my $str   = shift;
     # ignore whitespace
@@ -105,6 +105,10 @@ sub lex {
         $elem .= $char;
     }
 
+    if ($in_string) {
+        die "invalid syntax: unclosed string";
+    }
+
     return @items;
 }
 
@@ -163,7 +167,7 @@ sub parse {
 
         if ($token =~ /^[\$\%\@]/) {
             if ($token !~ /^[\$\%\@]\w+$/) {
-                die sprintf 'invalid symbol: "%s". symbols must start with a Perl sigil ($, %, or @) and contain only word characters', $token;
+                die sprintf 'invalid symbol: "%s". symbols must start with a Perl sigil ($, %%, or @) and contain only word characters', $token;
             }
 
             $left_node = [SYMBOL, $token];
@@ -210,7 +214,7 @@ sub parse {
                 $i += $close_index;
             } else {
                 die sprintf(
-                    "invalid syntax: %s expects either hash key '%sfoo%s' or array index '%s0%s' on the right hand side. found '%s' instead",
+                    q|invalid syntax: %s expects either hash key "%s'foo'%s" or array index "%s0%s" on the right hand side. found '%s' instead|,
                     ACCESS_OPERATOR,
                     HASHKEY_OPEN, HASHKEY_CLOSE,
                     ARRAYINDEX_OPEN, ARRAYINDEX_CLOSE,
