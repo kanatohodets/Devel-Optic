@@ -19,7 +19,7 @@ BEGIN {
         NUMBER => DEBUG ? "NUMBER" : 6,
     );
 
-    our @EXPORT_OK = (keys %ast_nodes, qw(lex parse));
+    our @EXPORT_OK = (keys %ast_nodes);
     our %EXPORT_TAGS = (
         constants => [keys %ast_nodes],
     );
@@ -37,9 +37,21 @@ use constant {
 
 my %symbols = map { $_ => 1 } qw({ } [ ]);
 
+sub new {
+    my $class = shift;
+    return bless {}, $class;
+}
+
+sub parse {
+    my ($self, $route) = @_;
+    my @tokens = $self->lex($route);
+    return _parse_tokens(@tokens);
+}
+
 # %foo->{'bar'}->[-2]->{$baz->{'asdf'}}->{'blorg}'}
 sub lex {
-    my $str   = shift;
+    my ($self, $str) = @_;
+
     # ignore whitespace
     my @chars = grep { $_ !~ /\s/ } split //, $str;
     my ( $elem, @items );
@@ -112,7 +124,7 @@ sub lex {
     return @items;
 }
 
-sub parse_hash {
+sub _parse_hash {
     my @tokens = @_;
     my $brace_count = 0;
     my $close_index;
@@ -132,10 +144,10 @@ sub parse_hash {
     die sprintf("invalid syntax: unclosed hash key (missing '%s')", HASHKEY_CLOSE) if !defined $close_index;
     die "invalid syntax: empty hash key" if $close_index == 1;
 
-    return $close_index, [OP_HASHKEY, parse(@tokens[1 .. $close_index-1])];
+    return $close_index, [OP_HASHKEY, _parse_tokens(@tokens[1 .. $close_index-1])];
 }
 
-sub parse_array {
+sub _parse_array {
     my @tokens = @_;
     my $bracket_count = 0;
     my $close_index;
@@ -156,10 +168,10 @@ sub parse_array {
     die sprintf("invalid syntax: unclosed array index (missing '%s')", ARRAYINDEX_CLOSE) if !defined $close_index;
     die "invalid syntax: empty array index" if $close_index == 1;
 
-    return $close_index, [OP_ARRAYINDEX, parse(@tokens[1 .. $close_index-1])];
+    return $close_index, [OP_ARRAYINDEX, _parse_tokens(@tokens[1 .. $close_index-1])];
 }
 
-sub parse {
+sub _parse_tokens {
     my (@tokens) = @_;
     my $left_node;
     for (my $i = 0; $i <= $#tokens; $i++) {
@@ -205,11 +217,11 @@ sub parse {
 
             my $right_node;
             if ($next eq HASHKEY_OPEN) {
-                my ($close_index, $hash_node) = parse_hash(@tokens[$i .. $#tokens]);
+                my ($close_index, $hash_node) = _parse_hash(@tokens[$i .. $#tokens]);
                 $right_node = $hash_node;
                 $i += $close_index;
             } elsif ($next eq ARRAYINDEX_OPEN) {
-                my ($close_index, $array_node) = parse_array(@tokens[$i .. $#tokens]);
+                my ($close_index, $array_node) = _parse_array(@tokens[$i .. $#tokens]);
                 $right_node = $array_node;
                 $i += $close_index;
             } else {
@@ -244,3 +256,5 @@ sub parse {
 
     return $left_node;
 }
+
+1;
