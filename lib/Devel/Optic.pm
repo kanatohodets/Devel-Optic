@@ -10,6 +10,8 @@ use Ref::Util qw(is_arrayref is_hashref is_scalarref is_refref);
 use Devel::Size qw(total_size);
 use PadWalker qw(peek_my);
 
+use Devel::Optic::Parser::Perlish;
+
 use constant {
     EXEMPLAR => [ map { { a => [1, 2, 3, qw(foo bar baz)] } } 1 .. 5 ],
 };
@@ -48,7 +50,14 @@ sub new {
         # how many keys or indicies to display in a sample from an over-size
         # hashref/arrayref
         ref_key_sample_count => $params{ref_key_sample_count} // DEFAULT_REF_KEY_SAMPLE_COUNT,
+
+        # the object responsible for parsing the route into an AST
+        parser => $params{parser_class} // Devel::Optic::Parser::Perlish->new,
     };
+
+    if (!$self->{parser}->can('parse')) {
+        croak "parser needs a 'parse' method";
+    }
 
     bless $self, $class;
 }

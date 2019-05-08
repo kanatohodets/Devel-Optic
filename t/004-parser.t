@@ -2,13 +2,13 @@
 use strict;
 use warnings;
 use Test2::V0;
-use Devel::Optic::Parser qw(
-    :constants
-);
+
+use Devel::Optic::Constants qw(:all);
+use Devel::Optic::Parser::Perlish;
 
 # note: not all valid lexes are valid parses (tokens might be invalid for a range of reasons)
 subtest 'valid lexes' => sub {
-    my $p = Devel::Optic::Parser->new;
+    my $p = Devel::Optic::Parser::Perlish->new;
     for my $test (qw($foo @foo %foo)) {
         is([ $p->lex($test) ], [$test], "Symbol '$test'");
     }
@@ -54,7 +54,7 @@ subtest 'valid lexes' => sub {
 };
 
 subtest invalid_lexes => sub {
-    my $p = Devel::Optic::Parser->new;
+    my $p = Devel::Optic::Parser::Perlish->new;
     like(
         dies { $p->lex("") },
         qr/invalid syntax: empty spec/,
@@ -75,7 +75,7 @@ subtest invalid_lexes => sub {
 };
 
 subtest valid_parses => sub {
-    my $p = Devel::Optic::Parser->new;
+    my $p = Devel::Optic::Parser::Perlish->new;
     for my $test (qw($foo @foo %foo)) {
         is($p->parse($test), [SYMBOL, $test], "Symbol '$test'");
     }
@@ -154,7 +154,7 @@ subtest valid_parses => sub {
 };
 
 subtest invalid_parses => sub {
-    my $p = Devel::Optic::Parser->new;
+    my $p = Devel::Optic::Parser::Perlish->new;
     like(
         dies { $p->parse(q|$fo#obar|) },
         qr/invalid symbol: "\$fo#obar". symbols must start with a Perl sigil \(.+\) and contain only word characters/,
