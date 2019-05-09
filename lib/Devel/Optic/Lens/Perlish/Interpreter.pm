@@ -4,7 +4,11 @@ use warnings;
 use Exporter qw(import);
 our @EXPORT_OK = qw(run);
 
+use Carp qw(croak);
+our @CARP_NOT = qw(Devel::Optic::Lens::Perlish Devel::Optic);
+
 use Devel::Optic::Lens::Perlish::Constants qw(:all);
+
 use Scalar::Util qw(looks_like_number);
 use Ref::Util qw(is_arrayref is_refref is_scalarref is_ref);
 
@@ -19,7 +23,7 @@ sub run {
         return _symbol($scope, $payload);
     }
 
-    die "must start with access or symbol";
+    croak "must start with access or symbol";
 }
 
 sub _access {
@@ -40,7 +44,7 @@ sub _access {
     }
 
     if ($r_type eq OP_ACCESS) {
-        die "not OK";
+        die "an access can't be followed directly by another access. the parser admitted an invalid program";
     }
 
     if ($r_type eq OP_HASHKEY) {
@@ -56,7 +60,7 @@ sub _arrayindex {
     my ($scope, $left, $child) = @_;
     my ($type, $value) = @$child;
     if ($type eq STRING) {
-        die "can't index array with a string";
+        croak "can't index array with a string";
     }
 
     my $index;
@@ -67,7 +71,7 @@ sub _arrayindex {
     if ($type eq SYMBOL) {
         my $resolved = _symbol($scope, $value);
         if (!looks_like_number($resolved)) {
-            die "array indexes have to be numbers";
+            croak "array indexes have to be numbers";
         }
         $index = $resolved;
     }
@@ -75,7 +79,7 @@ sub _arrayindex {
     if ($type eq OP_ACCESS) {
         my $resolved = _access($scope, $value);
         if (!looks_like_number($resolved)) {
-            die "array indexes have to be numbers";
+            croak "array indexes have to be numbers";
         }
         $index = $resolved;
     }
@@ -84,13 +88,14 @@ sub _arrayindex {
         my $len = scalar @$left;
         # negative indexes need checking too
         if ($len <= $index || ($index < 0 && ((-1 * $index) > $len))) {
-            die "does not exist: array is only $len elements long, but you want position $index";
+            croak "does not exist: array is only $len elements long, but you want position $index";
         }
 
         return $left->[$index];
     }
 
-    die "wtf array index";
+    # this should only happen when the parser admits an invalid program. which should never happen. in theory.
+    die "array index unexpected contents '$type'. please report this, it's a bug in the parser that this aperture was allowed in";
 }
 
 sub _hashkey {
@@ -105,7 +110,7 @@ sub _hashkey {
     if ($type eq SYMBOL) {
         my $resolved = _symbol($scope, $value);
         if (is_ref($resolved)) {
-            die "can't use a ref to key into a hash";
+            croak "can't use a ref to key into a hash";
         }
 
         $key = $resolved;
@@ -114,7 +119,7 @@ sub _hashkey {
     if ($type eq OP_ACCESS) {
         my $resolved = _access($scope, $value);
         if (is_ref($resolved)) {
-            die "can't use a ref to key into a hash";
+            croak "can't use a ref to key into a hash";
         }
 
         $key = $resolved;
@@ -122,19 +127,20 @@ sub _hashkey {
 
     if (defined $key) {
         if (!exists $left->{$key}) {
-            die "no such key '$key' in hash";
+            croak "no such key '$key' in hash";
         }
 
         return $left->{$key};
     }
 
-    die "wtf hash key";
+    # this should only happen when the parser admits an invalid program. which should never happen. in theory.
+    die "hash key unexpected contents '$type'. please report this, it's a bug in the parser that this aperture was allowed in";
 }
 
 sub _symbol {
     my ($scope, $name) = @_;
 
-    die "no symbol $name" if !exists $scope->{$name};
+    croak "no symbol '$name' in scope" if !exists $scope->{$name};
     my $val = $scope->{$name};
     if (is_refref($val) || is_scalarref($val)) {
         return $$val;

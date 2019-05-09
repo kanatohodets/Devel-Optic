@@ -1,10 +1,11 @@
 package Devel::Optic::Lens::Perlish::Parser;
 use strict;
 use warnings;
-use Carp qw(croak);
-our @CARP_NOT = qw(Devel::Optic::Lens::Perlish Devel::Optic);
 use Exporter qw(import);
 our @EXPORT_OK = qw(parse lex);
+
+use Carp qw(croak);
+our @CARP_NOT = qw(Devel::Optic::Lens::Perlish Devel::Optic);
 
 use Devel::Optic::Lens::Perlish::Constants qw(:all);
 
@@ -29,7 +30,7 @@ sub lex {
     my ($str) = @_;
 
     if (!defined $str) {
-        croak "invalid syntax: undefined spec";
+        croak "invalid syntax: undefined aperture";
     }
 
     # ignore whitespace
@@ -37,11 +38,11 @@ sub lex {
     my ( $elem, @items );
 
     if (scalar @chars == 0) {
-        die "invalid syntax: empty spec";
+        croak "invalid syntax: empty aperture";
     }
 
     if ($chars[0] ne '$' && $chars[0] ne '@' && $chars[0] ne '%') {
-        die 'invalid syntax: spec must start with a Perl symbol (prefixed by a $, @, or % sigil)';
+        croak 'invalid syntax: aperture must start with a Perl symbol (prefixed by a $, @, or % sigil)';
     }
 
     my $in_string;
@@ -98,7 +99,7 @@ sub lex {
     }
 
     if ($in_string) {
-        die "invalid syntax: unclosed string";
+        croak "invalid syntax: unclosed string";
     }
 
     return @items;
@@ -121,8 +122,8 @@ sub _parse_hash {
         }
     }
 
-    die sprintf("invalid syntax: unclosed hash key (missing '%s')", HASHKEY_CLOSE) if !defined $close_index;
-    die "invalid syntax: empty hash key" if $close_index == 1;
+    croak sprintf("invalid syntax: unclosed hash key (missing '%s')", HASHKEY_CLOSE) if !defined $close_index;
+    croak "invalid syntax: empty hash key" if $close_index == 1;
 
     return $close_index, [OP_HASHKEY, _parse_tokens(@tokens[1 .. $close_index-1])];
 }
@@ -145,8 +146,8 @@ sub _parse_array {
         }
     }
 
-    die sprintf("invalid syntax: unclosed array index (missing '%s')", ARRAYINDEX_CLOSE) if !defined $close_index;
-    die "invalid syntax: empty array index" if $close_index == 1;
+    croak sprintf("invalid syntax: unclosed array index (missing '%s')", ARRAYINDEX_CLOSE) if !defined $close_index;
+    croak "invalid syntax: empty array index" if $close_index == 1;
 
     return $close_index, [OP_ARRAYINDEX, _parse_tokens(@tokens[1 .. $close_index-1])];
 }
@@ -159,7 +160,7 @@ sub _parse_tokens {
 
         if ($token =~ /^[\$\%\@]/) {
             if ($token !~ /^[\$\%\@]\w+$/) {
-                die sprintf 'invalid symbol: "%s". symbols must start with a Perl sigil ($, %%, or @) and contain only word characters', $token;
+                croak sprintf 'invalid symbol: "%s". symbols must start with a Perl sigil ($, %%, or @) and contain only word characters', $token;
             }
 
             $left_node = [SYMBOL, $token];
@@ -172,27 +173,27 @@ sub _parse_tokens {
         }
 
         if ($token eq HASHKEY_OPEN) {
-            die sprintf "found '%s' outside of a %s operator. use %s regardless of sigil",
+            croak sprintf "found '%s' outside of a %s operator. use %s regardless of sigil",
                 HASHKEY_OPEN, ACCESS_OPERATOR, ACCESS_OPERATOR;
         }
 
         if ($token eq HASHKEY_CLOSE) {
-            die sprintf "found '%s' outside of a %s operator", HASHKEY_CLOSE, ACCESS_OPERATOR;
+            croak sprintf "found '%s' outside of a %s operator", HASHKEY_CLOSE, ACCESS_OPERATOR;
         }
 
         if ($token eq ARRAYINDEX_OPEN) {
-            die sprintf "found '%s' outside of a %s operator. use %s regardess of sigil",
+            croak sprintf "found '%s' outside of a %s operator. use %s regardess of sigil",
                 ARRAYINDEX_OPEN, ACCESS_OPERATOR, ACCESS_OPERATOR;
         }
 
         if ($token eq ARRAYINDEX_CLOSE) {
-            die sprintf "found '%s' outside of a %s operator", ARRAYINDEX_CLOSE, ACCESS_OPERATOR;
+            croak sprintf "found '%s' outside of a %s operator", ARRAYINDEX_CLOSE, ACCESS_OPERATOR;
         }
 
         if ($token eq ACCESS_OPERATOR) {
             my $next = $tokens[++$i];
             if (!defined $next) {
-                die sprintf "invalid syntax: '%s' needs something on the right hand side", ACCESS_OPERATOR;
+                croak sprintf "invalid syntax: '%s' needs something on the right hand side", ACCESS_OPERATOR;
             }
 
             my $right_node;
@@ -205,7 +206,7 @@ sub _parse_tokens {
                 $right_node = $array_node;
                 $i += $close_index;
             } else {
-                die sprintf(
+                croak sprintf(
                     q|invalid syntax: %s expects either hash key "%s'foo'%s" or array index "%s0%s" on the right hand side. found '%s' instead|,
                     ACCESS_OPERATOR,
                     HASHKEY_OPEN, HASHKEY_CLOSE,
@@ -215,7 +216,7 @@ sub _parse_tokens {
             }
 
             if (!defined $left_node) {
-                die sprintf("%s requires something on the left side", ACCESS_OPERATOR);
+                croak sprintf("%s requires something on the left side", ACCESS_OPERATOR);
             }
 
             $left_node = [OP_ACCESS, [
@@ -231,7 +232,7 @@ sub _parse_tokens {
             next;
         }
 
-        die "unrecognized token '$token'. hash key strings must be quoted with single quotes"
+        croak "unrecognized token '$token'. hash key strings must be quoted with single quotes"
     }
 
     return $left_node;
