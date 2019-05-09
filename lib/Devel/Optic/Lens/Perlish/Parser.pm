@@ -1,9 +1,12 @@
-package Devel::Optic::Parser::Perlish;
+package Devel::Optic::Lens::Perlish::Parser;
 use strict;
 use warnings;
+use Carp qw(croak);
+our @CARP_NOT = qw(Devel::Optic::Lens::Perlish Devel::Optic);
+use Exporter qw(import);
+our @EXPORT_OK = qw(parse lex);
 
-use Devel::Optic::Constants qw(:all);
-use parent 'Devel::Optic::Parser';
+use Devel::Optic::Lens::Perlish::Constants qw(:all);
 
 use constant {
     'ACCESS_OPERATOR'   => '->',
@@ -15,19 +18,19 @@ use constant {
 
 my %symbols = map { $_ => 1 } qw({ } [ ]);
 
-sub new {
-    return bless {}, __PACKAGE__;
-}
-
 sub parse {
-    my ($self, $route) = @_;
-    my @tokens = $self->lex($route);
+    my ($route) = @_;
+    my @tokens = lex($route);
     return _parse_tokens(@tokens);
 }
 
 # %foo->{'bar'}->[-2]->{$baz->{'asdf'}}->{'blorg}'}
 sub lex {
-    my ($self, $str) = @_;
+    my ($str) = @_;
+
+    if (!defined $str) {
+        croak "invalid syntax: undefined spec";
+    }
 
     # ignore whitespace
     my @chars = grep { $_ !~ /\s/ } split //, $str;

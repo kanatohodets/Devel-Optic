@@ -1,28 +1,28 @@
-package Devel::Optic::Interpreter;
+package Devel::Optic::Lens::Perlish::Interpreter;
 use strict;
 use warnings;
+use Exporter qw(import);
+our @EXPORT_OK = qw(run);
 
-use Devel::Optic::Constants qw(:all);
+use Devel::Optic::Lens::Perlish::Constants qw(:all);
 use Scalar::Util qw(looks_like_number);
 use Ref::Util qw(is_arrayref is_refref is_scalarref is_ref);
-use PadWalker qw(peek_my);
 
 sub run {
-    my ($uplevel, $ast) = @_;
-    my $scope = peek_my($uplevel);
+    my ($scope, $ast) = @_;
     my ($type, $payload) = @$ast;
     if ($type eq OP_ACCESS) {
-        return access($scope, $payload);
+        return _access($scope, $payload);
     }
 
     if ($type eq SYMBOL) {
-        return symbol($scope, $payload);
+        return _symbol($scope, $payload);
     }
 
     die "must start with access or symbol";
 }
 
-sub access {
+sub _access {
     my ($scope, $children) = @_;
 
     my ($left, $right) = @$children;
@@ -32,11 +32,11 @@ sub access {
     my ($r_type, $r_val) = @$right;
 
     if ($l_type eq SYMBOL) {
-        $l_arg = symbol($scope, $l_val);
+        $l_arg = _symbol($scope, $l_val);
     }
 
     if ($l_type eq OP_ACCESS) {
-        $l_arg = access($scope, $l_val);
+        $l_arg = _access($scope, $l_val);
     }
 
     if ($r_type eq OP_ACCESS) {
@@ -44,15 +44,15 @@ sub access {
     }
 
     if ($r_type eq OP_HASHKEY) {
-        return hashkey($scope, $l_arg, $r_val);
+        return _hashkey($scope, $l_arg, $r_val);
     }
 
     if ($r_type eq OP_ARRAYINDEX) {
-        return arrayindex($scope, $l_arg, $r_val);
+        return _arrayindex($scope, $l_arg, $r_val);
     }
 }
 
-sub arrayindex {
+sub _arrayindex {
     my ($scope, $left, $child) = @_;
     my ($type, $value) = @$child;
     if ($type eq STRING) {
@@ -65,7 +65,7 @@ sub arrayindex {
     }
 
     if ($type eq SYMBOL) {
-        my $resolved = symbol($scope, $value);
+        my $resolved = _symbol($scope, $value);
         if (!looks_like_number($resolved)) {
             die "array indexes have to be numbers";
         }
@@ -73,7 +73,7 @@ sub arrayindex {
     }
 
     if ($type eq OP_ACCESS) {
-        my $resolved = access($scope, $value);
+        my $resolved = _access($scope, $value);
         if (!looks_like_number($resolved)) {
             die "array indexes have to be numbers";
         }
@@ -93,7 +93,7 @@ sub arrayindex {
     die "wtf array index";
 }
 
-sub hashkey {
+sub _hashkey {
     my ($scope, $left, $child) = @_;
     my ($type, $value) = @$child;
 
@@ -103,7 +103,7 @@ sub hashkey {
     }
 
     if ($type eq SYMBOL) {
-        my $resolved = symbol($scope, $value);
+        my $resolved = _symbol($scope, $value);
         if (is_ref($resolved)) {
             die "can't use a ref to key into a hash";
         }
@@ -112,7 +112,7 @@ sub hashkey {
     }
 
     if ($type eq OP_ACCESS) {
-        my $resolved = access($scope, $value);
+        my $resolved = _access($scope, $value);
         if (is_ref($resolved)) {
             die "can't use a ref to key into a hash";
         }
@@ -131,7 +131,7 @@ sub hashkey {
     die "wtf hash key";
 }
 
-sub symbol {
+sub _symbol {
     my ($scope, $name) = @_;
 
     die "no symbol $name" if !exists $scope->{$name};

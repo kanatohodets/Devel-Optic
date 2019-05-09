@@ -1,4 +1,4 @@
-package Devel::Optic::Constants;
+package Devel::Optic::Lens::Perlish::Constants;
 use Exporter qw(import);
 
 use constant {
