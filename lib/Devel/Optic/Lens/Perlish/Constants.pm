@@ -6,6 +6,7 @@ use constant {
 };
 
 my %ast_nodes;
+my %interpreter;
 BEGIN {
     %ast_nodes = (
         OP_ACCESS       => DEBUG ? "OP_ACCESS" : 1,
@@ -16,12 +17,21 @@ BEGIN {
         NUMBER          => DEBUG ? "NUMBER" : 6,
     );
 
-    our @EXPORT_OK = (keys %ast_nodes);
+    %interpreter = (
+        NODE_TYPE => 0,
+        NODE_PAYLOAD => 1,
+        RAW_DATA_SAMPLE_SIZE => 10,
+    );
+
+    our @EXPORT_OK = (keys %ast_nodes, keys %interpreter);
     our %EXPORT_TAGS = (
-        all => [keys %ast_nodes],
+        all => [keys %ast_nodes, keys %interpreter],
     );
 }
 
-use constant \%ast_nodes;
+use constant {
+    %ast_nodes,
+    %interpreter,
+};
 
 1;
