@@ -5,7 +5,7 @@ package Devel::Optic;
 
 use Carp qw(croak);
 use Scalar::Util qw(looks_like_number);
-use Ref::Util qw(is_arrayref is_hashref is_scalarref is_refref);
+use Ref::Util qw(is_ref is_arrayref is_hashref is_scalarref is_coderef is_regexpref);
 
 use Devel::Size qw(total_size);
 use PadWalker qw(peek_my);
@@ -78,22 +78,37 @@ sub fit_to_view {
         return $subject;
     }
 
+    my $ref = ref $subject;
+    my $reasonably_summarized_with_substr = !is_ref($subject) || is_regexpref($subject) || is_scalarref($subject);
+
     # now we're in too-big territory, so we need to come up with a way to get
     # some useful data to the user without showing the whole structure
-    my $ref = ref $subject;
-    if (!$ref) {
+    if ($reasonably_summarized_with_substr) {
+        $subject = $$subject if is_scalarref($subject);
         my $scalar_truncation_size = $self->{scalar_truncation_size};
+        my $len = length $subject;
+
         # simple scalars we can truncate (PadWalker always returns refs, so
         # this is pretty safe from accidentally substr-ing an array or hash).
         # Also, once we know we're dealing with a gigantic string (or
         # number...), we can trim much more aggressively without hurting user
         # understanding too much.
+
+        if ($len <= $scalar_truncation_size) {
+            return sprintf(
+                "%s%s (len %d / %d bytes)",
+                $ref ? "$ref " : "",
+                $subject,
+                $len, $size,
+            );
+        }
+
         return sprintf(
-            "%s (truncated to length %d; length %d / %d bytes in full)",
-            substr($subject, 0, $scalar_truncation_size),
+            "%s%s (truncated to len %d; len %d / %d bytes in full)",
+            $ref ? "$ref " : "",
+            substr($subject, 0, $scalar_truncation_size) . "...",
             $scalar_truncation_size,
-            length $subject,
-            $size
+            $len, $size
         );
     }
 
@@ -146,7 +161,7 @@ sub fit_to_view {
         );
     }
 
-    return sprintf("$ref: $sample_text. Exceeds viewing size (%d bytes)", $max_size);
+    return "$ref: $sample_text";
 }
 
 1;

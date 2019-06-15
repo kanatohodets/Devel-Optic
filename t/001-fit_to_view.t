@@ -35,7 +35,7 @@ subtest 'summarize subjectively big structures by default' => sub {
     my $scalar_limit = Devel::Optic::DEFAULT_SCALAR_TRUNCATION_SIZE;
     like(
         $o->fit_to_view($string),
-        qr|a* \(truncated to length $scalar_limit; length \d+ / \d+ bytes in full\)$|,
+        qr|a* \(truncated to len $scalar_limit; len \d+ / \d+ bytes in full\)$|,
         'long string gets truncated message'
     );
 
@@ -44,7 +44,7 @@ subtest 'summarize subjectively big structures by default' => sub {
     my $arrayref_simple_len = scalar @$arrayref_with_simple_scalar_members;
     like(
         $o->fit_to_view($arrayref_with_simple_scalar_members),
-        qr|ARRAY: \[a, a, a, a \.\.\.\] \(len $arrayref_simple_len / \d+ bytes\)\. Exceeds viewing size \($ref_limit bytes\)$|,
+        qr|ARRAY: \[a, a, a, a \.\.\.\] \(len $arrayref_simple_len / \d+ bytes\)$|,
         'big arrayref with simple string scalar members gets summarized',
         { total_size => total_size($arrayref_with_simple_scalar_members), len => $arrayref_simple_len, limit => $ref_limit }
     );
@@ -53,7 +53,7 @@ subtest 'summarize subjectively big structures by default' => sub {
     my $arrayref_ref_len = scalar @$arrayref_with_ref_members;
     like(
         $o->fit_to_view($arrayref_with_ref_members),
-        qr|ARRAY: \[ARRAY, HASH, ARRAY, HASH \.\.\.\] \(len $arrayref_ref_len / \d+ bytes\)\. Exceeds viewing size \($ref_limit bytes\)$|,
+        qr|ARRAY: \[ARRAY, HASH, ARRAY, HASH \.\.\.\] \(len $arrayref_ref_len / \d+ bytes\)$|,
         'big arrayref with mixed ref members gets summarized',
         { total_size => total_size($arrayref_with_ref_members), len => $arrayref_ref_len, limit => $ref_limit }
     );
@@ -62,7 +62,7 @@ subtest 'summarize subjectively big structures by default' => sub {
     my $hashref_simple_values_keys = scalar keys %$hashref_with_simple_scalar_values;
     like(
         $o->fit_to_view($hashref_with_simple_scalar_values),
-        qr|HASH: \{\d+ => a, \d+ => a, \d+ => a, \d+ => a \.\.\.\} \($hashref_simple_values_keys keys / \d+ bytes\)\. Exceeds viewing size \($ref_limit bytes\)$|,
+        qr|HASH: \{\d+ => a, \d+ => a, \d+ => a, \d+ => a \.\.\.\} \($hashref_simple_values_keys keys / \d+ bytes\)$|,
         'big hashref with simple string scalar values gets summarized',
         { total_size => total_size($hashref_with_simple_scalar_values), key_count => $hashref_simple_values_keys, limit => $ref_limit }
     );
@@ -71,7 +71,7 @@ subtest 'summarize subjectively big structures by default' => sub {
     my $hashref_ref_values_keys = scalar keys %$hashref_with_ref_values;
     like(
         $o->fit_to_view($hashref_with_ref_values),
-        qr|HASH: \{\d+ => ARRAY, \d+ => ARRAY, \d+ => ARRAY, \d+ => ARRAY \.\.\.\} \($hashref_ref_values_keys keys / \d+ bytes\)\. Exceeds viewing size \($ref_limit bytes\)$|,
+        qr|HASH: \{\d+ => ARRAY, \d+ => ARRAY, \d+ => ARRAY, \d+ => ARRAY \.\.\.\} \($hashref_ref_values_keys keys / \d+ bytes\)$|,
         'big hashref with ref values gets summarized',
         { total_size => total_size($hashref_with_ref_values), key_count => $hashref_ref_values_keys, limit => $ref_limit }
     );
@@ -86,50 +86,50 @@ subtest 'check configurable limits' => sub {
     );
 
     like(
-        $o->fit_to_view("a"),
-        qr|a \(truncated to length 1; length \d+ / \d+ bytes in full\)$|,
+        $o->fit_to_view("abc"),
+        qr|a\.\.\. \(truncated to len 1; len \d+ / \d+ bytes in full\)$|,
         'string gets truncated message'
     );
 
     like(
         $o->fit_to_view(['a']),
-        qr|ARRAY: \[a\] \(len 1 / \d+ bytes\)\. Exceeds viewing size \(1 bytes\)$|,
+        qr|ARRAY: \[a\] \(len 1 / \d+ bytes\)$|,
         'arrayref with simple string scalar members gets summarized'
     );
 
     like(
         $o->fit_to_view(['abc']),
-        qr|ARRAY: \[a\.\.\.\] \(len 1 / \d+ bytes\)\. Exceeds viewing size \(1 bytes\)$|,
+        qr|ARRAY: \[a\.\.\.\] \(len 1 / \d+ bytes\)$|,
         'arrayref summary truncates long string scalar members'
     );
 
     like(
         $o->fit_to_view([qw(a b c d)]),
-        qr|ARRAY: \[a \.\.\.\] \(len 4 / \d+ bytes\)\. Exceeds viewing size \(1 bytes\)$|,
+        qr|ARRAY: \[a \.\.\.\] \(len 4 / \d+ bytes\)$|,
         'arrayref summary shows sample_count members'
     );
 
     like(
         $o->fit_to_view({a => 'b'}),
-        qr|HASH: \{a => b\} \(1 keys / \d+ bytes\)\. Exceeds viewing size \(1 bytes\)$|,
+        qr|HASH: \{a => b\} \(1 keys / \d+ bytes\)$|,
         'hashref with simple string scalar values gets summarized'
     );
 
     like(
         $o->fit_to_view({a => 'bcdefg'}),
-        qr|HASH: \{a => b\.\.\.\} \(1 keys / \d+ bytes\)\. Exceeds viewing size \(1 bytes\)$|,
+        qr|HASH: \{a => b\.\.\.\} \(1 keys / \d+ bytes\)$|,
         'hashref summary truncates long string scalar value'
     );
 
     like(
         $o->fit_to_view({abcd => 'bcdefg'}),
-        qr|HASH: \{a\.\.\. => b\.\.\.\} \(1 keys / \d+ bytes\)\. Exceeds viewing size \(1 bytes\)$|,
+        qr|HASH: \{a\.\.\. => b\.\.\.\} \(1 keys / \d+ bytes\)$|,
         'hashref summary truncates long key and long value'
     );
 
     like(
         $o->fit_to_view({a => 1, b => 2, c => 3}),
-        qr|HASH: \{\w => \d \.\.\.\} \(3 keys / \d+ bytes\)\. Exceeds viewing size \(1 bytes\)$|,
+        qr|HASH: \{\w => \d \.\.\.\} \(3 keys / \d+ bytes\)$|,
         'hashref summary shows sample_count pairs'
     );
 };
@@ -144,14 +144,38 @@ subtest 'sample count respects data structure size' => sub {
 
     like(
         $o->fit_to_view(['a']),
-        qr|ARRAY: \[a\] \(len 1 / \d+ bytes\)\. Exceeds viewing size \(1 bytes\)$|,
+        qr|ARRAY: \[a\] \(len 1 / \d+ bytes\)$|,
         'arrayref with just one member shows only one sample'
     );
 
     like(
         $o->fit_to_view({a => 'b'}),
-        qr|HASH: \{a => b\} \(1 keys / \d+ bytes\)\. Exceeds viewing size \(1 bytes\)$|,
+        qr|HASH: \{a => b\} \(1 keys / \d+ bytes\)$|,
         'hashref with one key shows only one sample'
+    );
+};
+
+subtest 'weird ref types' => sub {
+    my $o = Devel::Optic->new(
+        max_size => 1, # always summarize
+    );
+
+    like(
+        $o->fit_to_view(\'a'),
+        qr|SCALAR a \(len \d+ / \d+ bytes\)|,
+        'scalarref summary'
+    );
+
+    like(
+        $o->fit_to_view(qr/foo/),
+        qr|Regexp .+ \(len \d+ / \d+ bytes\)|,
+        'regexp summary'
+    );
+
+    like(
+        $o->fit_to_view(\*STDERR),
+        qr|GLOB: \d+ bytes$|,
+        'globref no summary'
     );
 };
 
