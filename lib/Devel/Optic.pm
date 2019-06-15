@@ -263,7 +263,7 @@ exist, L<Devel::Optic> will croak.
 
 =head3 QUERY SYNTAX
 
-L<Devel::Optic> uses a Perl-ish data access syntax for queries.  Just
+L<Devel::Optic> uses a Perl-ish data access syntax for queries.
 
 A query always starts with a variable name in the scope being picked, and
 uses C<-E<gt>> to indicate deeper access to that variable. At each level, the

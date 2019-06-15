@@ -116,7 +116,7 @@ exist, [Devel::Optic](https://metacpan.org/pod/Devel::Optic) will croak.
 
 ### QUERY SYNTAX
 
-[Devel::Optic](https://metacpan.org/pod/Devel::Optic) uses a Perl-ish data access syntax for queries.  Just
+[Devel::Optic](https://metacpan.org/pod/Devel::Optic) uses a Perl-ish data access syntax for queries.
 
 A query always starts with a variable name in the scope being picked, and
 uses `->` to indicate deeper access to that variable. At each level, the
