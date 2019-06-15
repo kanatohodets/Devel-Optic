@@ -82,7 +82,7 @@ subtest 'check configurable limits' => sub {
         max_size => 1, # always summarize
         scalar_truncation_size => 1,
         scalar_sample_size => 1,
-        ref_key_sample_count => 1,
+        sample_count => 1,
     );
 
     like(
@@ -93,44 +93,65 @@ subtest 'check configurable limits' => sub {
 
     like(
         $o->fit_to_view(['a']),
-        qr|ARRAY: \[a \.\.\.\] \(len 1 / \d+ bytes\)\. Exceeds viewing size \(1 bytes\)$|,
+        qr|ARRAY: \[a\] \(len 1 / \d+ bytes\)\. Exceeds viewing size \(1 bytes\)$|,
         'arrayref with simple string scalar members gets summarized'
     );
 
     like(
         $o->fit_to_view(['abc']),
-        qr|ARRAY: \[a\.\.\. \.\.\.\] \(len 1 / \d+ bytes\)\. Exceeds viewing size \(1 bytes\)$|,
+        qr|ARRAY: \[a\.\.\.\] \(len 1 / \d+ bytes\)\. Exceeds viewing size \(1 bytes\)$|,
         'arrayref summary truncates long string scalar members'
     );
 
     like(
         $o->fit_to_view([qw(a b c d)]),
         qr|ARRAY: \[a \.\.\.\] \(len 4 / \d+ bytes\)\. Exceeds viewing size \(1 bytes\)$|,
-        'arrayref summary shows ref_key_sample_count members'
+        'arrayref summary shows sample_count members'
     );
 
     like(
         $o->fit_to_view({a => 'b'}),
-        qr|HASH: \{a => b \.\.\.\} \(1 keys / \d+ bytes\)\. Exceeds viewing size \(1 bytes\)$|,
+        qr|HASH: \{a => b\} \(1 keys / \d+ bytes\)\. Exceeds viewing size \(1 bytes\)$|,
         'hashref with simple string scalar values gets summarized'
     );
 
     like(
         $o->fit_to_view({a => 'bcdefg'}),
-        qr|HASH: \{a => b\.\.\. \.\.\.\} \(1 keys / \d+ bytes\)\. Exceeds viewing size \(1 bytes\)$|,
+        qr|HASH: \{a => b\.\.\.\} \(1 keys / \d+ bytes\)\. Exceeds viewing size \(1 bytes\)$|,
         'hashref summary truncates long string scalar value'
     );
 
     like(
         $o->fit_to_view({abcd => 'bcdefg'}),
-        qr|HASH: \{a\.\.\. => b\.\.\. \.\.\.\} \(1 keys / \d+ bytes\)\. Exceeds viewing size \(1 bytes\)$|,
+        qr|HASH: \{a\.\.\. => b\.\.\.\} \(1 keys / \d+ bytes\)\. Exceeds viewing size \(1 bytes\)$|,
         'hashref summary truncates long key and long value'
     );
 
     like(
         $o->fit_to_view({a => 1, b => 2, c => 3}),
         qr|HASH: \{\w => \d \.\.\.\} \(3 keys / \d+ bytes\)\. Exceeds viewing size \(1 bytes\)$|,
-        'hashref summary shows ref_key_sample_count pairs'
+        'hashref summary shows sample_count pairs'
+    );
+};
+
+subtest 'sample count respects data structure size' => sub {
+    my $o = Devel::Optic->new(
+        max_size => 1, # always summarize
+        scalar_truncation_size => 1,
+        scalar_sample_size => 1,
+        sample_count => 10,
+    );
+
+    like(
+        $o->fit_to_view(['a']),
+        qr|ARRAY: \[a\] \(len 1 / \d+ bytes\)\. Exceeds viewing size \(1 bytes\)$|,
+        'arrayref with just one member shows only one sample'
+    );
+
+    like(
+        $o->fit_to_view({a => 'b'}),
+        qr|HASH: \{a => b\} \(1 keys / \d+ bytes\)\. Exceeds viewing size \(1 bytes\)$|,
+        'hashref with one key shows only one sample'
     );
 };
 

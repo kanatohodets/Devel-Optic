@@ -75,7 +75,7 @@ a structured logging pipeline.
     Size, in `substr` length terms, that scalar children of a summarized data
     structure are trimmed to for inclusion in the summary. Default: 64.
 
-- `ref_key_sample_count`
+- `sample_count`
 
     Number of keys/indices to display when summarizing a hash or arrayref. Default: 4.
 

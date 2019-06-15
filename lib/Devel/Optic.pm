@@ -22,7 +22,7 @@ use constant {
 
     DEFAULT_SCALAR_TRUNCATION_SIZE => 256,
     DEFAULT_SCALAR_SAMPLE_SIZE => 64,
-    DEFAULT_REF_KEY_SAMPLE_COUNT => 4,
+    DEFAULT_SAMPLE_COUNT => 4,
 };
 
 sub new {
@@ -49,7 +49,7 @@ sub new {
 
         # how many keys or indicies to display in a sample from an over-size
         # hashref/arrayref
-        ref_key_sample_count => $params{ref_key_sample_count} // DEFAULT_REF_KEY_SAMPLE_COUNT,
+        sample_count => $params{sample_count} // DEFAULT_SAMPLE_COUNT,
 
         lens => $params{lens} // Devel::Optic::Lens::Perlish->new,
     };
@@ -97,13 +97,15 @@ sub fit_to_view {
         );
     }
 
-    my $ref_key_sample_count = $self->{ref_key_sample_count};
+    my $sample_count = $self->{sample_count};
     my $scalar_sample_size = $self->{scalar_sample_size};
-    my $sample_text = "No sample for type '$ref'";
+    my $sample_text = "$size bytes";
     if (is_hashref($subject)) {
         my @sample;
         my @keys = keys %$subject;
-        my @sample_keys = @keys[0 .. $ref_key_sample_count - 1];
+        my $key_count = scalar @keys;
+        $sample_count = $key_count > $sample_count ? $sample_count : $key_count;
+        my @sample_keys = @keys[0 .. $sample_count - 1];
         for my $key (@sample_keys) {
             my $val = $subject->{$key};
             my $val_chunk;
@@ -117,12 +119,16 @@ sub fit_to_view {
             $key_chunk .= '...' if length($key_chunk) < length($key);
             push @sample, sprintf("%s => %s", $key_chunk, $val_chunk);
         }
-        $sample_text = sprintf("{%s ...} (%d keys / %d bytes)", join(', ', @sample), scalar @keys, $size);
+        $sample_text = sprintf("{%s%s} (%d keys / %d bytes)",
+            join(', ', @sample),
+            $key_count > $sample_count ? ' ...' : '',
+            $key_count, $size
+        );
     } elsif (is_arrayref($subject)) {
         my @sample;
         my $total_len = scalar @$subject;
-        my $sample_len = $total_len > $ref_key_sample_count ? $ref_key_sample_count : $total_len;
-        for (my $i = 0; $i < $sample_len; $i++) {
+        $sample_count = $total_len > $sample_count ? $sample_count : $total_len;
+        for (my $i = 0; $i < $sample_count; $i++) {
             my $val = $subject->[$i];
             my $val_chunk;
             if (ref $val) {
@@ -133,7 +139,11 @@ sub fit_to_view {
             }
             push @sample, $val_chunk;
         }
-        $sample_text = sprintf("[%s ...] (len %d / %d bytes)", join(', ', @sample), $total_len, $size);
+        $sample_text = sprintf("[%s%s] (len %d / %d bytes)",
+            join(', ', @sample),
+            $total_len > $sample_count ? ' ...' : '',
+            $total_len, $size
+        );
     }
 
     return sprintf("$ref: $sample_text. Exceeds viewing size (%d bytes)", $max_size);
@@ -220,7 +230,7 @@ viewing. Default: 256.
 Size, in C<substr> length terms, that scalar children of a summarized data
 structure are trimmed to for inclusion in the summary. Default: 64.
 
-=item C<ref_key_sample_count>
+=item C<sample_count>
 
 Number of keys/indices to display when summarizing a hash or arrayref. Default: 4.
 
