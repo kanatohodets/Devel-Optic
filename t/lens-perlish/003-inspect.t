@@ -224,7 +224,7 @@ subtest 'invalid queries' => sub {
 
     like(
         dies { $p->inspect({ '%hash' => {a => 1}, '$ref_key' => [] }, q|%hash->{$ref_key}|) },
-        qr|invalid hash key in '\%hash->{\$ref_key}': \$ref_key == 'ARRAYREF'|,
+        qr|invalid hash key in '\%hash->\{\$ref_key\}': \$ref_key == 'ARRAYREF'|,
         "symbolic ref key"
     );
 };
