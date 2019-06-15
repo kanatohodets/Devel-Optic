@@ -29,9 +29,7 @@ BEGIN {
     );
 }
 
-use constant {
-    %ast_nodes,
-    %interpreter,
-};
+use constant \%ast_nodes;
+use constant \%interpreter;
 
 1;
