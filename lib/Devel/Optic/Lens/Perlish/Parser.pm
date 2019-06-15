@@ -30,7 +30,7 @@ sub lex {
     my ($str) = @_;
 
     if (!defined $str) {
-        croak "invalid syntax: undefined aperture";
+        croak "invalid syntax: undefined query";
     }
 
     # ignore whitespace
@@ -38,11 +38,11 @@ sub lex {
     my ( $elem, @items );
 
     if (scalar @chars == 0) {
-        croak "invalid syntax: empty aperture";
+        croak "invalid syntax: empty query";
     }
 
     if ($chars[0] ne '$' && $chars[0] ne '@' && $chars[0] ne '%') {
-        croak 'invalid syntax: aperture must start with a Perl symbol (prefixed by a $, @, or % sigil)';
+        croak 'invalid syntax: query must start with a Perl symbol (prefixed by a $, @, or % sigil)';
     }
 
     my $in_string;

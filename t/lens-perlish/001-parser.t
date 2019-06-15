@@ -55,13 +55,13 @@ subtest 'valid lexes' => sub {
 subtest invalid_lexes => sub {
     like(
         dies { lex("") },
-        qr/invalid syntax: empty aperture/,
-        "empty aperture exception"
+        qr/invalid syntax: empty query/,
+        "empty query exception"
     );
 
     like(
         dies { lex("foobar") },
-        qr/invalid syntax: aperture must start with a Perl symbol/,
+        qr/invalid syntax: query must start with a Perl symbol/,
         "missing sigil at start"
     );
 

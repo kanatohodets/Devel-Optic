@@ -58,9 +58,9 @@ sub new {
 }
 
 sub inspect {
-    my ($self, $aperture) = @_;
+    my ($self, $query) = @_;
     my $scope = peek_my($self->{uplevel});
-    my $full_picture = $self->{lens}->inspect($scope, $aperture);
+    my $full_picture = $self->{lens}->inspect($scope, $query);
     return $self->fit_to_view($full_picture);
 }
 
@@ -166,12 +166,12 @@ environment to figure out what the heck is in your variables, without worrying
 whether the reporting code will blow up your program by trying shove gigabytes
 into the logging pipeline.
 
-It provides a basic Perl-ish syntax (an 'aperture') for extracting bits
+It provides a basic Perl-ish syntax (a 'query') for extracting bits
 of complex data structures from a Perl scope based on the variable name. This
 is intended for use by debuggers or similar introspection/observability tools
 where the consuming audience is a human troubleshooting a system.
 
-If the data structure selected by the aperture is too big, it will summarize the
+If the data structure selected by the query is too big, it will summarize the
 selected data structure into a short, human-readable message. No attempt is
 made to make the summary machine-readable: it should be immediately passed to
 a structured logging pipeline.
@@ -233,9 +233,9 @@ Number of keys/indices to display when summarizing a hash or arrayref. Default: 
   # 'a'
   $o->inspect(q|$stuff->{'foo'}->[0]|);
 
-This is the primary method. Given an aperture, It will either return the
-requested data structure, or, if it is too big, return a summary of the data
-structure found at that path.
+This is the primary method. Given a query, It will either return the requested
+data structure, or, if it is too big, return a summary of the data structure
+found at that path.
 
 =head2 fit_to_view
 
@@ -253,26 +253,24 @@ This method takes a Perl object/data structure and either returns it unchanged,
 or produces a 'squished' summary of that object/data structure. This summary
 makes no attempt to be comprehensive: its goal is to maximally aid human
 troubleshooting efforts, including efforts to refine a previous invocation of
-Devel::Optic with a more specific aperture.
+Devel::Optic with a more specific query.
 
 =head2 full_picture
 
-This method takes an 'aperture' and uses it to extract a data structure from the
-L<Devel::Optic>'s C<uplevel>. If the aperture points to a variable that does not
+This method takes a 'query' and uses it to extract a data structure from the
+L<Devel::Optic>'s C<uplevel>. If the query points to a variable that does not
 exist, L<Devel::Optic> will croak.
 
-=head3 APERTURE SYNTAX
+=head3 QUERY SYNTAX
 
-L<Devel::Optic> uses a Perl-ish data access syntax called an 'aperture'.  Just
-like a real aperture, it reduces the amount of unwanted signal hitting your
-sensor.
+L<Devel::Optic> uses a Perl-ish data access syntax for queries.  Just
 
-An aperture always starts with a variable name in the scope being picked, and
+A query always starts with a variable name in the scope being picked, and
 uses C<-E<gt>> to indicate deeper access to that variable. At each level, the
 value should be a key or index that can be used to navigate deeper or identify
 the target data.
 
-For example, an aperture like this:
+For example, a query like this:
 
     %my_cool_hash->{'a'}->[1]->{'needle'}
 
@@ -287,7 +285,7 @@ Will return the value:
 
     "find me!"
 
-A less specific aperture on the same data structure:
+A less specific query on the same data structure:
 
     %my_cool_hash->{'a'}
 
@@ -302,9 +300,9 @@ Other syntactic examples:
     $array_ref->[0]->{'foo'}
     $scalar
 
-=head4 APERTURE SYNTAX ALTNERATIVES
+=head4 QUERY SYNTAX ALTNERATIVES
 
-The aperture syntax attempts to provide a reasonable amount of power
+The query syntax attempts to provide a reasonable amount of power
 for navigating Perl data structures without risking the stability of the system
 under inspection.
 
@@ -322,7 +320,7 @@ Or even:
 
     %my_hash->{$some_arrayref->[$some_scalar->{'key'}]}->{'needle'}
 
-Ouch. In practice I hope and expect that the majority of apertures will be
+Ouch. In practice I hope and expect that the majority of queries will be
 simple scalars, or maybe one or two chained hashkey/array index lookups.
 
 I'm open to exploring other syntax in this area as long as it is aligned with

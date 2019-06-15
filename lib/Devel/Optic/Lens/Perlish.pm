@@ -12,8 +12,8 @@ sub new {
 }
 
 sub inspect {
-    my ($self, $scope, $aperture) = @_;
-    my $ast = parse($aperture);
+    my ($self, $scope, $query) = @_;
+    my $ast = parse($query);
     return run($scope, $ast);
 }
 
