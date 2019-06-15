@@ -7,6 +7,7 @@ use Carp qw(croak);
 use Scalar::Util qw(looks_like_number);
 use Ref::Util qw(is_ref is_arrayref is_hashref is_scalarref is_coderef is_regexpref);
 
+use Sub::Info qw(sub_info);
 use Devel::Size qw(total_size);
 use PadWalker qw(peek_my);
 
@@ -158,6 +159,15 @@ sub fit_to_view {
             join(', ', @sample),
             $total_len > $sample_count ? ' ...' : '',
             $total_len, $size
+        );
+    } elsif (is_coderef($subject)) {
+        my $info = sub_info($subject);
+        $sample_text = sprintf("sub %s { ... } (L%d-%d in %s (%s))",
+            $info->{name},
+            $info->{start_line},
+            $info->{end_line},
+            $info->{package},
+            $info->{file},
         );
     }
 

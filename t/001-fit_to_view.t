@@ -177,6 +177,12 @@ subtest 'weird ref types' => sub {
         qr|GLOB: \d+ bytes$|,
         'globref no summary'
     );
+
+    like(
+        $o->fit_to_view(\&Devel::Optic::new),
+        qr|CODE: sub new \{ \.\.\. \} \(L\d+-\d+ in Devel::Optic \(.+\)\)$|,
+        'coderef summary'
+    );
 };
 
 done_testing;
