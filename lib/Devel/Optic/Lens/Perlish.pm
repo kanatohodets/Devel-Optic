@@ -5,6 +5,7 @@ use warnings;
 use Devel::Optic::Lens::Perlish::Parser qw(parse);
 use Devel::Optic::Lens::Perlish::Interpreter qw(run);
 
+our @CARP_NOT = qw(Devel::Optic);
 sub new {
     my ($class) = @_;
     my $self = {};
