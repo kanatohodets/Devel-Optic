@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 package Devel::Optic;
-# ABSTRACT: JSON::Pointer meets PadWalker
+# ABSTRACT: Production safe data inspector
 
 use Carp qw(croak);
 use Scalar::Util qw(looks_like_number);
@@ -9,6 +9,8 @@ use Ref::Util qw(is_arrayref is_hashref is_scalarref is_refref);
 
 use Devel::Size qw(total_size);
 use PadWalker qw(peek_my);
+
+use Devel::Optic::Lens::Perlish;
 
 use constant {
     EXEMPLAR => [ map { { a => [1, 2, 3, qw(foo bar baz)] } } 1 .. 5 ],
@@ -48,67 +50,18 @@ sub new {
         # how many keys or indicies to display in a sample from an over-size
         # hashref/arrayref
         ref_key_sample_count => $params{ref_key_sample_count} // DEFAULT_REF_KEY_SAMPLE_COUNT,
+
+        lens => $params{lens} // Devel::Optic::Lens::Perlish->new,
     };
 
     bless $self, $class;
 }
 
 sub inspect {
-    my ($self, $route) = @_;
-    my $full_picture = $self->full_picture($route);
+    my ($self, $query) = @_;
+    my $scope = peek_my($self->{uplevel});
+    my $full_picture = $self->{lens}->inspect($scope, $query);
     return $self->fit_to_view($full_picture);
-}
-
-sub full_picture {
-    my ($self, $route) = @_;
-    my $uplevel = $self->{uplevel};
-
-
-    my @pieces = split '/', $route;
-
-    croak '$route must not be empty' if !$route || !defined $pieces[0];
-    my $sigil = substr $pieces[0], 0, 1;
-    if (!$sigil || $sigil ne '$' && $sigil ne '%' && $sigil ne '@') {
-        croak '$route must start with a Perl variable name (like "$scalar", "@array", or "%hash")';
-    }
-
-    my $var_name = shift @pieces;
-    my $scope = peek_my($uplevel);
-    croak "variable '$var_name' is not a lexical variable in scope" if !exists $scope->{$var_name};
-
-    my $var = $scope->{$var_name};
-
-    if (is_scalarref($var) || is_refref($var)) {
-        $var = ${ $var };
-    }
-
-    my $position = $var;
-    my $route_so_far = $var_name;
-    while (scalar @pieces) {
-        my $key = shift @pieces;
-        my $new_route = $route_so_far . "/$key";
-        if (is_arrayref($position)) {
-            if (!looks_like_number($key)) {
-                croak "'$route_so_far' is an array, but '$new_route' points to a string key";
-            }
-            my $len = scalar @$position;
-            # negative indexes need checking too
-            if ($len <= $key || ($key < 0 && ((-1 * $key) > $len))) {
-                croak "'$new_route' does not exist: array '$route_so_far' is only $len elements long";
-            }
-            $position = $position->[$key];
-        } elsif (is_hashref($position)) {
-            if (!exists $position->{$key}) {
-                croak "'$new_route' does not exist: no key '$key' in hash '$route_so_far'";
-            }
-            $position = $position->{$key};
-        } else {
-            my $ref = ref $position || "NOT-A-REF";
-            croak "'$route_so_far' points to ref of type '$ref'. '$route' points deeper, but Devel::Optic doesn't know how to traverse further";
-        }
-        $route_so_far = $new_route;
-    }
-    return $position;
 }
 
 sub fit_to_view {
@@ -190,7 +143,7 @@ sub fit_to_view {
 
 =head1 NAME
 
-Devel::Optic - JSON::Pointer meets PadWalker
+Devel::Optic - Production safe variable inspector
 
 =head1 SYNOPSIS
 
@@ -199,29 +152,29 @@ Devel::Optic - JSON::Pointer meets PadWalker
   my $foo = { bar => ['baz', 'blorg', { clang => 'pop' }] };
 
   # 'pop'
-  $optic->inspect('$foo/bar/-1/clang');
+  $optic->inspect(q|$foo->{'bar'}->[-1]->{'clang'}|);
 
   # 'HASH: { bar => ARRAY ...} (1 total keys / 738 bytes). Exceeds viewing size (100 bytes)"
   $optic->inspect('$foo');
 
 =head1 DESCRIPTION
 
-L<Devel::Optic> is a L<borescope|https://en.wikipedia.org/wiki/Borescope> for
-Perl programs.
+L<Devel::Optic> is a L<fiberscope|https://en.wikipedia.org/wiki/Fiberscope> for
+Perl programs. Just like a real fiberscope, it provides 'nondestructive
+inspection' of your variables. In other words: use this in your production
+environment to figure out what the heck is in your variables, without worrying
+whether the reporting code will blow up your program by trying shove gigabytes
+into the logging pipeline.
 
-It provides a basic JSON::Pointer-ish path syntax (a 'route') for extracting
-bits of complex data structures from a Perl scope based on the variable name.
-This is intended for use by debuggers or similar introspection/observability
-tools where the consuming audience is a human troubleshooting a system.
+It provides a basic Perl-ish syntax (a 'query') for extracting bits
+of complex data structures from a Perl scope based on the variable name. This
+is intended for use by debuggers or similar introspection/observability tools
+where the consuming audience is a human troubleshooting a system.
 
-If the data structure selected by the route is too big, it will summarize the
+If the data structure selected by the query is too big, it will summarize the
 selected data structure into a short, human-readable message. No attempt is
 made to make the summary machine-readable: it should be immediately passed to
 a structured logging pipeline.
-
-It takes a caller uplevel and a JSON::Pointer-style 'route', and returns the
-variable or summary of a variable found by that route for the scope of that
-caller level.
 
 =head1 METHODS
 
@@ -253,7 +206,7 @@ Default: Platform dependent. The value is calculated by
 
 ... which is ~3kb on C<x86_64>, and ~160 bytes JSON encoded. This is an
 estimate on my part for the size of data structure that makes sense to export
-in raw format when viewed. In my entirely subjective opinion, larger data
+in raw format when viewed. To my entirely personal taste, larger data
 structures than this are too big to reasonably export to logs in their
 entirety.
 
@@ -278,9 +231,9 @@ Number of keys/indices to display when summarizing a hash or arrayref. Default: 
   my $stuff = { foo => ['a', 'b', 'c'] };
   my $o = Devel::Optic->new;
   # 'a'
-  $o->inspect('$stuff/foo/0');
+  $o->inspect(q|$stuff->{'foo'}->[0]|);
 
-This is the primary method. Given a route, It will either return the requested
+This is the primary method. Given a query, It will either return the requested
 data structure, or, if it is too big, return a summary of the data structure
 found at that path.
 
@@ -300,29 +253,28 @@ This method takes a Perl object/data structure and either returns it unchanged,
 or produces a 'squished' summary of that object/data structure. This summary
 makes no attempt to be comprehensive: its goal is to maximally aid human
 troubleshooting efforts, including efforts to refine a previous invocation of
-Devel::Optic with a more specific route.
+Devel::Optic with a more specific query.
 
 =head2 full_picture
 
-This method takes a 'route' and uses it to extract a data structure from the
-L<Devel::Optic>'s C<uplevel>. If the route points to a variable that does not
+This method takes a 'query' and uses it to extract a data structure from the
+L<Devel::Optic>'s C<uplevel>. If the query points to a variable that does not
 exist, L<Devel::Optic> will croak.
 
-=head3 ROUTE SYNTAX
+=head3 QUERY SYNTAX
 
-L<Devel::Optic> uses a very basic JSON::Pointer style path syntax called
-a 'route'.
+L<Devel::Optic> uses a Perl-ish data access syntax for queries.  Just
 
-A route always starts with a variable name in the scope being picked,
-and uses C</> to indicate deeper access to that variable. At each level, the
+A query always starts with a variable name in the scope being picked, and
+uses C<-E<gt>> to indicate deeper access to that variable. At each level, the
 value should be a key or index that can be used to navigate deeper or identify
 the target data.
 
-For example, a route like this:
+For example, a query like this:
 
-    %my_cool_hash/a/1/needle
+    %my_cool_hash->{'a'}->[1]->{'needle'}
 
-Traversing a scope like this:
+Applied to a scope like this:
 
     my %my_cool_hash = (
         a => ["blub", { needle => "find me!", some_other_key => "blorb" }],
@@ -333,9 +285,9 @@ Will return the value:
 
     "find me!"
 
-A less selective route on the same data structure:
+A less specific query on the same data structure:
 
-    %my_cool_hash/a
+    %my_cool_hash->{'a'}
 
 Will return that branch of the tree:
 
@@ -343,22 +295,35 @@ Will return that branch of the tree:
 
 Other syntactic examples:
 
-    $hash_ref/a/0/3/blorg
-    @array/0/foo
-    $array_ref/0/foo
+    $hash_ref->{'a'}->[0]->[3]->{'blorg'}
+    @array->[0]->{'foo'}
+    $array_ref->[0]->{'foo'}
     $scalar
 
-=head4 ROUTE SYNTAX ALTNERATIVES
+=head4 QUERY SYNTAX ALTNERATIVES
 
-The 'route' syntax attempts to provide a reasonable amount of power for
-navigating Perl data structures without risking the stability of the system
+The query syntax attempts to provide a reasonable amount of power
+for navigating Perl data structures without risking the stability of the system
 under inspection.
 
 In other words, while C<eval '$my_cool_hash{a}-E<gt>[1]-E<gt>{needle}'> would
 be a much more powerful solution to the problem of navigating Perl data
 structures, it opens up all the cans of worms at once.
 
-I'm open to exploring richer syntax in this area as long as it is aligned with
+The current syntax might be a little bit "uncanny valley" in that it looks like
+Perl, but is not Perl. It is Perl-ish. It also might be too complex, since it
+allows fancy things like nested resolution:
+
+    $foo->{$bar}
+
+Or even:
+
+    %my_hash->{$some_arrayref->[$some_scalar->{'key'}]}->{'needle'}
+
+Ouch. In practice I hope and expect that the majority of queries will be
+simple scalars, or maybe one or two chained hashkey/array index lookups.
+
+I'm open to exploring other syntax in this area as long as it is aligned with
 the following goals:
 
 =over 4
@@ -387,10 +352,6 @@ surprise when debugging systems with unexpectedly large data structures.
 =item *
 
 L<PadWalker>
-
-=item *
-
-L<Mojo::JSON::Pointer>
 
 =item *
 
