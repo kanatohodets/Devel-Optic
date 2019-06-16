@@ -2,7 +2,7 @@ use Test2::V0;
 
 use Devel::Optic::Lens::Perlish;
 
-subtest 'empty data structures' => sub {
+subtest 'empty/simple data structures' => sub {
     my $p = Devel::Optic::Lens::Perlish->new;
 
     my $undef = undef;
@@ -17,14 +17,26 @@ subtest 'empty data structures' => sub {
     my @empty_array = ();
     is($p->inspect({'@empty_array' => \@empty_array}, '@empty_array'), \@empty_array, 'empty array');
 
+    my @simple_array = (1, 2, 3);
+    is($p->inspect({'@simple_array' => \@simple_array}, '@simple_array'), \@simple_array, 'simple array');
+
     my %empty_hash = ();
     is($p->inspect({'%empty_hash' => \%empty_hash}, '%empty_hash'), \%empty_hash, 'empty hash');
+
+    my %simple_hash = (a => 1, b => 2, c => 3);
+    is($p->inspect({'%simple_hash' => \%simple_hash}, '%simple_hash'), \%simple_hash, 'simple hash');
 
     my $empty_arrayref = [];
     is($p->inspect({'$empty_arrayref' => \$empty_arrayref}, '$empty_arrayref'), $empty_arrayref, 'empty arrayref');
 
+    my $simple_arrayref = [1, 2, 3];
+    is($p->inspect({'$simple_arrayref' => \$simple_arrayref}, '$simple_arrayref'), $simple_arrayref, 'simple arrayref');
+
     my $empty_hashref = {};
     is($p->inspect({'$empty_hashref' => \$empty_hashref}, '$empty_hashref'), $empty_hashref, 'empty hashref');
+
+    my $simple_hashref = {a => 1, b => 2, c => 3};
+    is($p->inspect({'$simple_hashref' => \$simple_hashref}, '$simple_hashref'), $simple_hashref, 'simple hashref');
 };
 
 subtest 'valid index picking' => sub {
@@ -71,7 +83,7 @@ subtest 'valid key picking' => sub {
     is($p->inspect($scope, q|$hashref->{'c'}|), $hashref->{c}, 'multi member hashref key c');
 };
 
-subtest 'valid deep routes, single data type' => sub {
+subtest 'valid deep queries, single data type' => sub {
     my $p = Devel::Optic::Lens::Perlish->new;
     my @array = ([[[42]]]);
     my $scope = { '@array' => \@array };
@@ -90,7 +102,7 @@ subtest 'valid deep routes, single data type' => sub {
     is($p->inspect($scope, q|$hashref->{'foo'}->{'foo'}->{'foo'}->{'foo'}|), $hashref->{foo}->{foo}->{foo}->{foo}, 'hashref nested key');
 };
 
-subtest 'valid deep routes, mixed data types' => sub {
+subtest 'valid deep queries, mixed data types' => sub {
     my $p = Devel::Optic::Lens::Perlish->new;
     my @array = ({ foo => [{ foo => 42}]});
     my $scope = { '@array' => \@array };
@@ -107,6 +119,48 @@ subtest 'valid deep routes, mixed data types' => sub {
     my $hashref = {foo => [{ foo => [42]}]};
     $scope = { '$hashref' => \$hashref };
     is($p->inspect($scope, q|$hashref->{'foo'}->[0]->{'foo'}->[0]|), $hash{foo}->[0]->{foo}->[0], 'hashref nested mixed type key');
+};
+
+subtest 'nested queries' => sub {
+    my $p = Devel::Optic::Lens::Perlish->new;
+    my $key = "a";
+    my $index = 0;
+    my @array = ({ $key => [{ $key => 1}]});
+    my $scope = { '@array' => \@array, '$key' => $key, '$index' => $index };
+    is(
+        $p->inspect($scope, q|@array->[$index]->{$key}->[$index]->{$key}|),
+        $array[$index]->{$key}->[$index]->{$key},
+        'nested resolution, array + simple symbol',
+    );
+
+    my %hash = ($key => [{ $key => [1]}]);
+    $scope = { '%hash' => \%hash, '$key' => $key, '$index' => $index };
+    is(
+        $p->inspect($scope, q|%hash->{$key}->[$index]->{$key}->[$index]|),
+        $hash{$key}->[$index]->{$key}->[$index],
+        'nested resolution, hash + simple symbol',
+    );
+
+    $scope = { '$foo' => ['needle'], '$bar' => [0], '$baz' => [0], '$qux' => [0] };
+    is(
+        $p->inspect($scope, q|$foo->[$bar->[$baz->[$qux->[0]]]]|),
+        'needle',
+        'nested resolution, array + multi-tier array resolution',
+    );
+
+    $scope = { '$foo' => { a => 'needle' }, '$bar' => { a => 'a' }, '$baz' => { a => 'a' }, '$qux' => { a => 'a' } };
+    is(
+        $p->inspect($scope, q|$foo->{$bar->{$baz->{$qux->{'a'}}}}|),
+        'needle',
+        'nested resolution, hash + multi-tier hash resolution',
+    );
+
+    $scope = { '$foo' => { a => 'needle' }, '$bar' => ['a'], '$baz' => { a => 0 }, '$qux' => ['a'], '$index' => 0, };
+    is(
+        $p->inspect($scope, q|$foo->{$bar->[$baz->{$qux->[$index]}]}|),
+        'needle',
+        'nested resolution, hash + multi-tier mixed resolution',
+    );
 };
 
 subtest 'invalid queries' => sub {

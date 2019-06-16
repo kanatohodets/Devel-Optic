@@ -3,6 +3,16 @@ use Test2::V0;
 use Devel::Optic;
 use Devel::Size qw(total_size);
 
+subtest 'initialization' => sub {
+    for my $bogus_uplevel ('blorg', 0, -3) {
+        like(
+            dies { Devel::Optic->new(uplevel => $bogus_uplevel) },
+            qr|uplevel should be integer >= 1, not '$bogus_uplevel'|,
+            "bogus uplevel ($bogus_uplevel)"
+        );
+    }
+};
+
 subtest 'avoid summarizing empty structures by default' => sub {
     my $o = Devel::Optic->new();
     my $undef = undef;
