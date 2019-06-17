@@ -1,6 +1,10 @@
 package Devel::Optic::Lens::Perlish::Constants;
+
+# ABSTRACT: Useful constants for the Perlish lens
+
 use strict;
 use warnings;
+
 use Exporter qw(import);
 
 use constant {

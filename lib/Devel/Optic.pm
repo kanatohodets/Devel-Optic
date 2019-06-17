@@ -1,7 +1,9 @@
+package Devel::Optic;
+
+# ABSTRACT: Production safe data inspector
+
 use strict;
 use warnings;
-package Devel::Optic;
-# ABSTRACT: Production safe data inspector
 
 use Carp qw(croak);
 use Scalar::Util qw(looks_like_number);

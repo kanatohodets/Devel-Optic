@@ -1,8 +1,12 @@
 package Devel::Optic::Lens::Perlish::Interpreter;
+
+# ABSTRACT: Basic recursive interpreter for Perlish lens
+
 use strict;
 use warnings;
+
 use Exporter qw(import);
-our @EXPORT_OK = qw(run _ast_to_code);
+our @EXPORT_OK = qw(run);
 
 use Carp qw(croak);
 our @CARP_NOT = qw(Devel::Optic::Lens::Perlish Devel::Optic);

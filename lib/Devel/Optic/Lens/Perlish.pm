@@ -1,4 +1,7 @@
 package Devel::Optic::Lens::Perlish;
+
+# ABSTRACT: Perl-ish syntax for querying data structures
+
 use strict;
 use warnings;
 

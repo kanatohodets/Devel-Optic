@@ -1,6 +1,10 @@
 package Devel::Optic::Lens::Perlish::Parser;
+
+# ABSTRACT: Lexer/parser for Perlish lens
+
 use strict;
 use warnings;
+
 use Exporter qw(import);
 our @EXPORT_OK = qw(parse lex);
 
