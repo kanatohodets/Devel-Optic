@@ -244,7 +244,7 @@ sub _sample_or_ref {
     }
 
     if (length $raw > RAW_DATA_SAMPLE_SIZE) {
-        return substr($raw, 0, RAW_DATA_SAMPLE_SIZE) . "...";
+        return sprintf("'%s'", substr($raw, 0, RAW_DATA_SAMPLE_SIZE) . "...");
     }
     return $raw;
 }
