@@ -115,6 +115,8 @@ sub fit_to_view {
             my $val_chunk;
             if (ref $val) {
                 $val_chunk = ref $val;
+            } elsif (!defined $val) {
+                $val_chunk = '(undef)';
             } else {
                 $val_chunk = substr($val, 0, $scalar_sample_size);
                 $val_chunk .= '...' if length($val_chunk) < length($val);
@@ -137,6 +139,8 @@ sub fit_to_view {
             my $val_chunk;
             if (ref $val) {
                 $val_chunk = ref $val;
+            } elsif (!defined $val) {
+                $val_chunk = '(undef)';
             } else {
                 $val_chunk = substr($val, 0, $scalar_sample_size);
                 $val_chunk .= '...' if length($val_chunk) < length($val);
